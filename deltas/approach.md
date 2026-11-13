@@ -179,7 +179,7 @@ Reglas de dominio completas en `.claude/rules/code-driven-layer.md`. Resumen de 
 - **Errores:** un `DomainError.define(...)` por sub-slice, códigos `snake_case` cerrados y mensajes fijos en inglés; los datos variables viajan en `details`.
 - **Casos de uso y slices de `app`:** `acción-entidad` en kebab-case (`register-user`, `place-order`). Los flujos viven en el `handler.ts` del slice, no en `core`.
 - **Archivos fijos por slice de `app`:** `route.ts`, `handler.ts`, `schema.ts`.
-- **Carpetas de `infra`:** una sola palabra de 6–7 letras → `stores`, `plugins`, `shared`.
+- **Carpetas de `infra`:** una sola palabra de 6–7 letras → `stores`, `plugins`, `errors`, `shared`.
 - **Archivos de `infra`:** `<implementación>.<rol>.ts` → `account.store.ts`, `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`; la clase es la implementación (`BunHasher`, `DailyNumbering`).
 - **Sin comentarios** en el código: los nombres y la estructura deben explicarse solos.
 - **Idioma del código:** identificadores y mensajes de error en inglés (`.claude/rules/code-english-only.md`); la documentación sigue en español.
@@ -196,7 +196,7 @@ app ──► core ◄── infra
 - **El core no genera ids ni lee el reloj:** recibe `now` y los ids ya creados por quien lo llama (el handler).
 - **Los flujos que cruzan contextos son flujos de `app`.** Por ejemplo `place-order` lee el carrito, retira stock de los productos, crea el pedido y vacía el carrito desde su handler.
 - Zod vive solo en `app` (esquemas HTTP de los slices); `core` valida con los `parse` de sus objetos de valor.
-- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia (container, auth, exceptions) y no importan `app`.
+- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia (container, auth, exceptions) y no importan `app`; `infra/errors` es la tabla de traducción de errores que usa el plugin `exceptions`.
 - `scripts/server.dock.ts` es la única raíz de composición (el contenedor dockdi de la app): enlaza tokens con implementaciones y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. Los tokens viven en `source/tokens.ts`.
 
 ### Estructura propuesta
@@ -244,10 +244,14 @@ project/
 │  │  │  ├─ product.store.ts
 │  │  │  ├─ cart.store.ts
 │  │  │  └─ order.store.ts
+│  │  ├─ errors/                    # traducción de DomainError a HTTP (sin Elysia salvo el tipo de validación)
+│  │  │  ├─ known.errors.ts         # KnownError: unión de los errores de cada sub-slice + isKnown
+│  │  │  ├─ status.errors.ts        # código -> estado HTTP (tabla exhaustiva verificada al compilar)
+│  │  │  └─ reply.errors.ts         # estado + cuerpo { code, message, details }
 │  │  ├─ plugins/                   # plugins de Elysia
 │  │  │  ├─ container.plugin.ts     # expone el contenedor al contexto
 │  │  │  ├─ auth.plugin.ts          # macro `auth`: resuelve sesión o 401 (RN-07)
-│  │  │  └─ exceptions.plugin.ts    # DomainError -> código HTTP + cuerpo uniforme
+│  │  │  └─ exceptions.plugin.ts    # onError global: delega en errors/ y responde
 │  │  └─ shared/                    # adaptadores de contratos no persistentes
 │  │     ├─ bun.hasher.ts           # Bun.password (cifrado, RN-05)
 │  │     ├─ system.clock.ts
@@ -311,7 +315,7 @@ project/
 
 La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se resuelve contra `SessionRepository`.
 
-Traducción de errores (`exceptions.plugin.ts`): los fallos de objetos de valor (`invalid_*`) responden 400; `invalid_credentials`, `invalid_session_token` y `session_required` responden 401; `account_not_found` y `product_not_found`, 404; `email_taken`, `product_out_of_stock`, `insufficient_stock` y `quantity_exceeds_stock`, 409; `empty_order`, 422. El mapa se verifica en compilación: agregar un código nuevo sin estado HTTP no compila.
+Traducción de errores (`infra/errors`, usada por `exceptions.plugin.ts`): los fallos de objetos de valor (`invalid_*`) responden 400; `invalid_credentials`, `invalid_session_token` y `session_required` responden 401; `account_not_found` y `product_not_found`, 404; `email_taken`, `product_out_of_stock`, `insufficient_stock` y `quantity_exceeds_stock`, 409; `empty_order`, 422. El mapa se verifica en compilación: agregar un código nuevo sin estado HTTP no compila.
 
 ### Cómo se prueba cada capa
 
@@ -338,7 +342,7 @@ Traducción de errores (`exceptions.plugin.ts`): los fallos de objetos de valor 
 **Infra**
 - [x] `stores`: account, session, product, cart, order (con `add` que reemplaza por id), enlazados como singletons en `server.dock.ts`.
 - [x] `shared`: `bun.hasher.ts`, `system.clock.ts`, `uuid.generator.ts`, `daily.numbering.ts`.
-- [x] `plugins`: `container` (decora el contexto con el dock), `auth` (macro `auth: true` que resuelve `account` desde `Authorization: Bearer` o responde 401) y `exceptions` (`DomainError` y errores de validación a HTTP con cuerpo `{ code, message, details }`).
+- [x] `plugins`: `container` (decora el contexto con el dock), `auth` (macro `auth: true` que resuelve `account` desde `Authorization: Bearer` o responde 401) y `exceptions` (hook `onError` delgado que usa `infra/errors`; responde con cuerpo `{ code, message, details }`).
 
 **App** (aquí van los casos de uso)
 - [ ] 8 slices (`route.ts`, `handler.ts`, `schema.ts`) agrupados en 4 contextos con su `index.ts`; cada `handler` orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
