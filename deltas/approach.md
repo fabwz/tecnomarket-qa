@@ -178,7 +178,7 @@ Reglas de dominio completas en `.claude/rules/code-driven-layer.md`. Resumen de 
 - **Objetos de valor:** declaración con el mismo nombre que su tipo (`kind`, `parse`, `is`); el `parse` es su único constructor y lanza el error del sub-slice.
 - **Errores:** un `DomainError.define(...)` por sub-slice, códigos `snake_case` cerrados y mensajes fijos en inglés; los datos variables viajan en `details`.
 - **Casos de uso y slices de `app`:** `acción-entidad` en kebab-case (`register-user`, `place-order`). Los flujos viven en el `handler.ts` del slice, no en `core`.
-- **Archivos fijos por slice de `app`:** `route.ts`, `handler.ts`, `schema.ts`.
+- **Archivos por slice de `app`:** `route.ts` y `handler.ts` siempre; `schema.ts` (Zod) solo si el slice recibe cuerpo o parámetros. Las proyecciones de respuesta compartidas por varios slices de un contexto van en `<entidad>.view.ts` (`product.view.ts`, `cart.view.ts`, `order.view.ts`).
 - **Carpetas de `infra`:** una sola palabra de 6–7 letras → `stores`, `plugins`, `errors`, `shared`.
 - **Archivos de `infra`:** `<implementación>.<rol>.ts` → `account.store.ts`, `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`; la clase es la implementación (`BunHasher`, `DailyNumbering`).
 - **Sin comentarios** en el código: los nombres y la estructura deben explicarse solos.
@@ -196,8 +196,8 @@ app ──► core ◄── infra
 - **El core no genera ids ni lee el reloj:** recibe `now` y los ids ya creados por quien lo llama (el handler).
 - **Los flujos que cruzan contextos son flujos de `app`.** Por ejemplo `place-order` lee el carrito, retira stock de los productos, crea el pedido y vacía el carrito desde su handler.
 - Zod vive solo en `app` (esquemas HTTP de los slices); `core` valida con los `parse` de sus objetos de valor.
-- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia (container, auth, exceptions) y no importan `app`; `infra/errors` es la tabla de traducción de errores que usa el plugin `exceptions`.
-- `scripts/server.dock.ts` es la única raíz de composición (el contenedor dockdi de la app): enlaza tokens con implementaciones y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. Los tokens viven en `source/tokens.ts`.
+- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia (auth, exceptions) y no importan `app`; `infra/errors` es la tabla de traducción de errores que usa el plugin `exceptions`.
+- `scripts/server.dock.ts` es la única raíz de composición (el contenedor dockdi de la app): enlaza tokens con implementaciones y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. Las rutas son fábricas `(dock) => Elysia` que cierran sobre el dock; así los handlers también se pueden invocar sin HTTP. Los tokens viven en `source/tokens.ts`.
 
 ### Estructura propuesta
 
@@ -249,7 +249,6 @@ project/
 │  │  │  ├─ status.errors.ts        # código -> estado HTTP (tabla exhaustiva verificada al compilar)
 │  │  │  └─ reply.errors.ts         # estado + cuerpo { code, message, details }
 │  │  ├─ plugins/                   # plugins de Elysia
-│  │  │  ├─ container.plugin.ts     # expone el contenedor al contexto
 │  │  │  ├─ auth.plugin.ts          # macro `auth`: resuelve sesión o 401 (RN-07)
 │  │  │  └─ exceptions.plugin.ts    # onError global: delega en errors/ y responde
 │  │  └─ shared/                    # adaptadores de contratos no persistentes
@@ -261,20 +260,23 @@ project/
 │  └─ app/                          # capa HTTP: slices agrupados por bounded context; el handler es el caso de uso
 │     ├─ app.ts                     # createApp(dock): ensambla plugins y contextos
 │     ├─ account-access/
-│     │  ├─ index.ts                # agrupa los slices del contexto
+│     │  ├─ index.ts                # accountAccessRoutes(dock): agrupa los slices del contexto
 │     │  ├─ register-user/          # POST /auth/register
 │     │  │  └─ route.ts · handler.ts · schema.ts
 │     │  └─ login-user/             # POST /auth/login
 │     ├─ product-catalog/
 │     │  ├─ index.ts
+│     │  ├─ product.view.ts         # proyección de Product para la respuesta
 │     │  ├─ list-products/          # GET /products
 │     │  └─ view-product/           # GET /products/:id
 │     ├─ shopping-cart/
 │     │  ├─ index.ts
+│     │  ├─ cart.view.ts
 │     │  ├─ view-cart/              # GET /cart
 │     │  └─ add-cart-item/          # POST /cart/items
 │     └─ order-checkout/
 │        ├─ index.ts
+│        ├─ order.view.ts
 │        ├─ place-order/            # POST /orders
 │        └─ list-orders/            # GET /orders
 │
@@ -317,6 +319,12 @@ La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se re
 
 Traducción de errores (`infra/errors`, usada por `exceptions.plugin.ts`): los fallos de objetos de valor (`invalid_*`) responden 400; `invalid_credentials`, `invalid_session_token` y `session_required` responden 401; `account_not_found` y `product_not_found`, 404; `email_taken`, `product_out_of_stock`, `insufficient_stock` y `quantity_exceeds_stock`, 409; `empty_order`, 422. El mapa se verifica en compilación: agregar un código nuevo sin estado HTTP no compila.
 
+Decisiones de los handlers:
+
+- `login-user` solo compara la contraseña si cumple la política (`PlainPassword.is`); si no, responde `invalid_credentials` igual que con una contraseña incorrecta (CP-LOG-07). La cuenta inexistente responde 404 y la contraseña incorrecta 401, como exige RN-06.
+- `place-order` rechaza el carrito vacío antes de pedir número de pedido (no se consumen números en intentos vacíos) y calcula todo (retiros de stock y pedido) antes de guardar nada: o se guarda todo o nada (RN-13).
+- Las respuestas nunca incluyen `passwordHash`.
+
 ### Cómo se prueba cada capa
 
 - **Aislamiento por prueba:** `createDock(overrides?)` (en `scripts/server.dock.ts`) devuelve un contenedor nuevo con stores vacíos y acepta `overrides` (un `Module` de dockdi). `beforeEach` crea uno y carga el seed (U1–U3, P-001–P-004); no hay estado global que limpiar. La "limpieza posterior" de los E2E se cumple descartando el dock en `afterEach`.
@@ -342,12 +350,12 @@ Traducción de errores (`infra/errors`, usada por `exceptions.plugin.ts`): los f
 **Infra**
 - [x] `stores`: account, session, product, cart, order (con `add` que reemplaza por id), enlazados como singletons en `server.dock.ts`.
 - [x] `shared`: `bun.hasher.ts`, `system.clock.ts`, `uuid.generator.ts`, `daily.numbering.ts`.
-- [x] `plugins`: `container` (decora el contexto con el dock), `auth` (macro `auth: true` que resuelve `account` desde `Authorization: Bearer` o responde 401) y `exceptions` (hook `onError` delgado que usa `infra/errors`; responde con cuerpo `{ code, message, details }`).
+- [x] `plugins`: `auth` (macro `auth: true` que resuelve `account` desde `Authorization: Bearer` o responde 401) y `exceptions` (hook `onError` delgado que usa `infra/errors`; responde con cuerpo `{ code, message, details }`).
 
 **App** (aquí van los casos de uso)
-- [ ] 8 slices (`route.ts`, `handler.ts`, `schema.ts`) agrupados en 4 contextos con su `index.ts`; cada `handler` orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
-- [ ] Esquemas Zod por slice (la traducción de `DomainError` a HTTP ya está en `exceptions.plugin.ts`).
-- [ ] `app.ts` con `createApp(dock)` y `scripts/server.boot.ts`.
+- [x] 8 slices (`route.ts`, `handler.ts` y `schema.ts` cuando hay entrada) agrupados en 4 contextos con su `index.ts`; cada `handler` es una función `(dock, account?, input?)` que orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
+- [x] Esquemas Zod por slice (campos obligatorios: reportan todos los campos a la vez, CP-REG-06).
+- [x] `app.ts` con `createApp(dock)`, `source/env.ts` (`PORT`) y `scripts/server.boot.ts`. El arranque manual no carga catálogo: los productos de prueba los siembra `testing/support`.
 
 **Testing**
 - [ ] `support/` (fixtures, test-dock, factories, api-client).
