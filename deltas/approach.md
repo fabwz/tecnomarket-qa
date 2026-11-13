@@ -171,6 +171,7 @@ Ancla con el sistema: varios riesgos ya aparecen en nuestras reglas y casos de p
 Reglas de dominio completas en `.claude/rules/code-driven-layer.md`. Resumen de lo que aplica aquí:
 
 - **Bounded contexts** en `core`: par de dos palabras, la segunda describe el contexto y no se repite como sufijo → `shared-kernel`, `account-access`, `product-catalog`, `shopping-cart`, `order-checkout`.
+- **`shared-kernel` es plano:** sin sub-carpetas, un archivo por tema con nombre corto (`values`, `identity`, `entity`, `errors`, `clock`) y su barrel.
 - **Sub-slices** dentro de cada contexto: una palabra corta (`account`, `session`, `product`, `cart`, `order`). Los archivos son `<subslice>.<tipo>.ts` y solo existen los tipos necesarios: `entity`, `parts`, `vos`, `policies`, `errors`, `repository` y roles (`hasher`, `numbering`, `clock`, `generator`). No hay archivo `contracts`.
 - **Barrel:** un `index.ts` en la raíz de cada contexto re-exporta todo; desde fuera solo se importa `@core/<contexto>`, nunca una subcarpeta.
 - **Nombres exportados** únicos dentro del contexto y con su sustantivo completo (`AccountId`, `EmailAddress`, `OrderNumber`; no `Id`).
@@ -210,12 +211,12 @@ project/
 │  ├─ tokens.ts                     # tokens dockdi de contratos
 │  │
 │  ├─ core/                         # dominio: sin casos de uso, sin librerías
-│  │  ├─ shared-kernel/
-│  │  │  ├─ value/value.vos.ts      # Distinct, text(), whole(), identifier()
-│  │  │  ├─ entity/entity.entity.ts # Entity base: congelada, restore, sameAs, with
-│  │  │  ├─ error/error.errors.ts   # DomainError.define
-│  │  │  ├─ system/system.clock.ts       # contrato Clock
-│  │  │  ├─ system/system.generator.ts   # contrato IdGenerator
+│  │  ├─ shared-kernel/            # plano: sin sub-carpetas
+│  │  │  ├─ values.ts               # Distinct, text(), whole()
+│  │  │  ├─ identity.ts             # identifier(), contrato IdGenerator
+│  │  │  ├─ entity.ts               # Entity base: congelada, restore, sameAs, with
+│  │  │  ├─ errors.ts               # DomainError.define
+│  │  │  ├─ clock.ts                # contrato Clock
 │  │  │  └─ index.ts
 │  │  ├─ account-access/
 │  │  │  ├─ account/                # Account (+ AccountId, EmailAddress, FullName, PhoneNumber, PlainPassword, PasswordHash)
