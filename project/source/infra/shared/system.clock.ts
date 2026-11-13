@@ -1,4 +1,4 @@
-import type { Clock } from "@core/kernel/contracts";
+import type { Clock } from "@core/shared-kernel";
 
 export class SystemClock implements Clock {
 	now(): Date {

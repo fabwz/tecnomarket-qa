@@ -1,11 +1,11 @@
-import type { PasswordHasher } from "@core/users/contracts";
+import { PasswordHash, type PasswordHasher, type PlainPassword } from "@core/account-access";
 
 export class BunHasher implements PasswordHasher {
-	hash(plain: string): string {
-		return Bun.password.hashSync(plain, { algorithm: "bcrypt", cost: 10 });
+	hash(plain: PlainPassword): PasswordHash {
+		return PasswordHash.parse(Bun.password.hashSync(plain, { algorithm: "bcrypt", cost: 10 }));
 	}
 
-	verify(plain: string, hashed: string): boolean {
+	verify(plain: PlainPassword, hashed: PasswordHash): boolean {
 		return Bun.password.verifySync(plain, hashed);
 	}
 }
