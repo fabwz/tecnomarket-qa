@@ -199,7 +199,7 @@ app ──► core ◄── infra
 - Zod vive solo en `app` (esquemas HTTP de los slices); `core` valida con los `parse` de sus objetos de valor.
 - `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia, también clases (`AuthPlugin` recibe sesiones, cuentas y reloj; `ExceptionsPlugin` no recibe nada) y no importan `app`; `infra/errors` es la tabla de traducción de errores que usa el plugin `exceptions`.
 - **Inyección de dependencias:** `source/tokens.ts` solo declara los 9 tokens de los contratos de `core` (reloj, ids, hasher, numeración y 5 repositorios), porque `core` no puede importar dockdi y tanto `infra` (que los enlaza) como `app` (que los consume) los necesitan. El resto de los tokens (handlers y plugins) viven junto a su clase. El cableado se reparte en módulos dockdi, uno por sección, junto a lo que enlazan: `infra/{shared,stores,plugins}/*.module.ts` y `app/<contexto>/<contexto>.module.ts` más `app/app.module.ts`.
-- `scripts/server.dock.ts` es la única raíz de composición: carga todos los módulos, aplica `overrides` sobre un `scope()` hijo y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. Los tokens viven en `source/tokens.ts`.
+- `scripts/server.dock.ts` es la única raíz de composición: carga todos los módulos, aplica `overrides` sobre un `scope()` hijo y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/utilities`. Los tokens viven en `source/tokens.ts`.
 
 ### Estructura propuesta
 
@@ -300,11 +300,12 @@ project/
    │  ├─ escenario1-registro-compra.test.ts
    │  ├─ escenario2-login-compra.test.ts
    │  └─ escenario3-historial.test.ts
-   └─ support/                      # compartido por ambos tipos
-      ├─ fixtures.ts                # U1–U3, P-001–P-004
-      ├─ test-dock.ts               # dock nuevo + seed por prueba
-      ├─ factories.ts               # fábricas de usuarios y productos
-      └─ api-client.ts              # cliente tipado sobre app.handle
+   └─ utilities/                    # compartido por ambos tipos
+      ├─ fixtures.ts                # U1–U3 (ana, luis, maria), P-001–P-004 y los 2 pedidos de U3
+      ├─ doubles.ts                 # TestClock, SequentialIds, FastHasher
+      ├─ factories.ts               # entidades del dominio a partir de fixtures; registrationInput()
+      ├─ test-dock.ts               # createTestDock(seed?): dock aislado con dobles + seed + ApiClient
+      └─ api-client.ts              # ApiClient tipado sobre app.handle; expectOk / expectFailure
 ```
 
 `reports/` (salida de la ejecución) y `docs/` (análisis, diagrama, matriz, casos) viven en la raíz del repositorio, fuera de `project/`.
@@ -362,10 +363,12 @@ Decisiones de los handlers:
 **App** (aquí van los casos de uso)
 - [x] 8 slices (`<slice>.plugin.ts`, `<slice>.handler.ts` y `<slice>.schema.ts` cuando hay entrada) agrupados en 4 contextos con su `<contexto>.plugin.ts`; cada handler es una clase con sus dependencias inyectadas y un método `execute` que orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
 - [x] Esquemas Zod por slice (campos obligatorios: reportan todos los campos a la vez, CP-REG-06).
-- [x] `app.ts` (clase `App`, resuelta con `AppToken`), `source/env.ts` (`PORT`) y `scripts/server.boot.ts`. El arranque manual no carga catálogo: los productos de prueba los siembra `testing/support`.
+- [x] `app.ts` (clase `App`, resuelta con `AppToken`), `source/env.ts` (`PORT`) y `scripts/server.boot.ts`. El arranque manual no carga catálogo: los productos de prueba los siembra `testing/utilities`.
 
 **Testing**
-- [ ] `support/` (fixtures, test-dock, factories, api-client).
+- [x] `utilities/`: `fixtures`, `doubles`, `factories`, `test-dock` y `api-client`.
+  - `createTestDock({ accounts, products, orders })` crea un dock nuevo por prueba con reloj controlado (`TestClock`, arranca el 2026-11-13 10:00 UTC), ids secuenciales (`id-0001`…) y hasher rápido (`FastHasher`, no guarda texto plano). Cada bandera en `false` omite esa parte del seed (por ejemplo catálogo vacío para CP-CAT-02).
+  - `ApiClient` devuelve `ApiResponse<T>` con el tipo de salida de cada handler (las fechas son `string`); `expectOk` y `expectFailure` estrechan el resultado.
 - [ ] 7 archivos en `functions/` (66 casos) y 3 en `integration/`.
 - [ ] Configuración de reportes (HTML, JSON, JUnit) hacia `reports/`.
 
@@ -415,7 +418,7 @@ Criterio de "excelente" en lo automatizado: **todas** las pruebas implementadas 
 
 1. Validar Bun + Vitest con un caso mínimo (resuelve el riesgo técnico principal). **Hecho.**
 2. Construir el sistema mínimo: modelo de dominio en `core` (**hecho**), luego `infra` (stores, plugins) y por último los slices de `app`, donde viven los casos de uso (handlers).
-3. Armar `testing/support` (fixtures, test-dock, factories, cliente) (de ahí dependen todas las pruebas).
+3. Armar `testing/utilities` (fixtures, dobles, factories, test-dock, cliente) (de ahí dependen todas las pruebas). **Hecho.**
 4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro.
 5. Escribir los 3 escenarios en `testing/integration`.
 6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias.

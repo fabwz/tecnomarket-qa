@@ -274,13 +274,13 @@ Estado: Pendiente
 ## 7. Qué falta antes de poder ejecutar
 
 Hecho:
+- `testing/utilities`: fixtures (U1–U3, P-001–P-004, 2 pedidos de U3), dobles (reloj, ids, hasher), fábricas, dock de prueba con seed y cliente de API tipado.
 - Configuración de Vitest con alias de rutas y dock de composición con `override` para pruebas.
 - Modelo de dominio en `core` (kernel compartido y 4 contextos) y adaptadores `infra/shared` (reloj, ids, hasher, numeración de pedidos).
 
 Pendiente:
 - `infra`: 5 stores en memoria, enlaces en el dock y plugins de Elysia (`container`, `auth`, `exceptions`).
 - `app`: 8 slices con sus handlers (aquí viven los casos de uso) y la clase `App`.
-- `testing/support`: fixtures, dock de prueba con seed, fábricas y cliente de API.
 - Escribir los 66 casos unitarios y los 3 escenarios E2E.
 - Configurar el reporte (HTML + JSON/JUnit); falta `@vitest/ui` para el HTML.
 - Ajustar la matriz de trazabilidad del documento (extensión `.test.ts` y rutas `testing/functions` y `testing/integration`).
