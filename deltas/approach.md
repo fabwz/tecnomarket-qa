@@ -170,10 +170,11 @@ Ancla con el sistema: varios riesgos ya aparecen en nuestras reglas y casos de p
 
 - **Bounded contexts** (en `core` y en `app`): sustantivo en plural, 5–7 letras → `kernel`, `users`, `catalog`, `carts`, `orders`.
 - **Casos de uso y slices:** `acción-entidad` en kebab-case, mismo nombre en `core` y en `app` (un caso de uso en `core` ↔ un slice en `app`).
-- **Archivos fijos por contexto:** `entity.ts`, `rules.ts`, `contracts.ts`. Mismos nombres en todos los contextos.
+- **Archivos fijos por contexto:** `entity.ts` y `contracts.ts`; `rules.ts` solo cuando el contexto tiene reglas propias (`orders` no las tiene: sus reglas viven en `place-order`).
 - **Archivos fijos por slice:** `route.ts`, `handler.ts`, `schema.ts`.
 - **Carpetas de `infra`:** una sola palabra de 6–7 letras → `stores`, `plugins`, `shared`.
 - **Archivos de `infra`:** `<implementación>.<rol>.ts` → `user.store.ts`, `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`; la clase es `<Implementación><Rol>`.
+- **Sin comentarios** en el código: los nombres y la estructura deben explicarse solos.
 - **Idioma del código:** identificadores y mensajes de error en inglés (`.claude/rules/code-english-only.md`); la documentación sigue en español.
 - Los puertos de persistencia se llaman `*Store` (no `*Repository`).
 
@@ -185,6 +186,7 @@ app ──► core ◄── infra
 ```
 
 - `core` no importa nada de `app`, `infra`, Elysia ni dockdi. Define los **puertos** (`contracts.ts`) y `infra` los implementa.
+- Dentro de `core`, `carts` y `orders` pueden importar de `catalog` y `carts` (flujo de compra); ningún contexto importa de `orders`, y `users` no depende de ninguno.
 - `infra/stores` e `infra/shared` implementan los puertos de `core`.
 - `infra/plugins` son plugins de Elysia (container, auth, exceptions); consumen casos de uso de `core` vía el contenedor y no importan `app`.
 - `app` solo usa casos de uso de `core` (vía contenedor) y los plugins de `infra/plugins`.
@@ -204,6 +206,7 @@ project/
 │  ├─ core/                         # dominio: puro, sin dependencias de framework
 │  │  ├─ kernel/
 │  │  │  ├─ response.ts             # Result<T, E>, ok(), err()
+│  │  │  ├─ validation.ts           # parse(schema, input) -> Result con validation_failed
 │  │  │  ├─ exceptions.ts           # Exception (unión discriminada por code) + constructores
 │  │  │  └─ contracts.ts            # Clock, IdGenerator
 │  │  ├─ users/
@@ -211,22 +214,22 @@ project/
 │  │  │  ├─ rules.ts                # Zod: nombre, correo, teléfono, contraseña
 │  │  │  ├─ contracts.ts            # UserStore, SessionStore, PasswordHasher
 │  │  │  ├─ register-user.ts        # CU-01
-│  │  │  └─ login-user.ts           # CU-02 (+ resolver sesión por token)
+│  │  │  ├─ login-user.ts           # CU-02 (sesión con vencimiento de 30 min)
+│  │  │  └─ resolve-session.ts      # token -> perfil, o session_required (lo usa el plugin auth)
 │  │  ├─ catalog/
 │  │  │  ├─ entity.ts               # Product
-│  │  │  ├─ rules.ts
+│  │  │  ├─ rules.ts                # disponibilidad (stock > 0) y vista del producto
 │  │  │  ├─ contracts.ts            # ProductStore
 │  │  │  ├─ list-products.ts        # CU-03
 │  │  │  └─ view-product.ts         # CU-04
 │  │  ├─ carts/
 │  │  │  ├─ entity.ts               # Cart y funciones puras (agregar línea, cantidad, total)
-│  │  │  ├─ rules.ts                # cantidad entera ≥ 1 y ≤ stock
+│  │  │  ├─ rules.ts                # cantidad entera ≥ 1 (el tope de stock se valida en add-cart-item)
 │  │  │  ├─ contracts.ts            # CartStore
 │  │  │  ├─ add-cart-item.ts        # CU-05
 │  │  │  └─ view-cart.ts            # CU-06
 │  │  └─ orders/
 │  │     ├─ entity.ts               # Order, OrderLine
-│  │     ├─ rules.ts                # formato PED-AAAAMMDD-NNNN
 │  │     ├─ contracts.ts            # OrderStore, OrderNumberGenerator
 │  │     ├─ place-order.ts          # CU-07 (todo o nada, RN-13)
 │  │     └─ list-orders.ts          # CU-08
@@ -321,11 +324,12 @@ La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se re
 - [x] `scripts/server.dock.ts` con `createDock(overrides?)`: contenedor nuevo por llamada, `override` aplicado sobre un `scope()` hijo.
 - [x] `infra/shared`: `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`, `daily.generator.ts` (los dos últimos con sus contratos en `users/contracts.ts` y `orders/contracts.ts`).
 
-**Core** (`entity.ts`, `rules.ts`, `contracts.ts` por contexto, más los casos de uso)
-- [ ] `users`: reglas Zod (nombre, correo normalizado a minúsculas, teléfono, contraseña; RN-02 a RN-05), `register-user`, `login-user`.
-- [ ] `catalog`: `list-products`, `view-product`.
-- [ ] `carts`: funciones puras del carrito, `add-cart-item`, `view-cart` (RN-08 a RN-10).
-- [ ] `orders`: `place-order`, `list-orders` (RN-11 a RN-14).
+**Core** (`entity.ts`, `contracts.ts` y, si aplica, `rules.ts` por contexto, más los casos de uso)
+- [x] `kernel/validation.ts` (`parse` con Zod).
+- [x] `users`: reglas Zod (nombre, correo normalizado a minúsculas, teléfono, contraseña; RN-02 a RN-05), `register-user`, `login-user`, `resolve-session`.
+- [x] `catalog`: `list-products`, `view-product`.
+- [x] `carts`: funciones puras del carrito, `add-cart-item`, `view-cart` (RN-08 a RN-10).
+- [x] `orders`: `place-order`, `list-orders` (RN-11 a RN-14).
 
 **Infra**
 - [ ] `stores`: user, session, product, cart, order.
