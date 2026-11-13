@@ -300,16 +300,18 @@ project/
 
 | Slice | Método y ruta | CU | Sesión | Respuestas |
 |---|---|---|---|---|
-| `users/register-user` | `POST /auth/register` | CU-01 | No | 201; 400 validación; 409 correo duplicado |
-| `users/login-user` | `POST /auth/login` | CU-02 | No | 200 con token; 401 contraseña incorrecta; 404 cuenta inexistente |
-| `catalog/list-products` | `GET /products` | CU-03 | Sí | 200; 401 |
-| `catalog/view-product` | `GET /products/:id` | CU-04 | Sí | 200; 401; 404 |
-| `carts/view-cart` | `GET /cart` | CU-06 | Sí | 200 con líneas, cantidad y total; 401 |
-| `carts/add-cart-item` | `POST /cart/items` | CU-05 | Sí | 200; 400 cantidad inválida; 409 stock insuficiente o agotado; 404; 401 |
-| `orders/place-order` | `POST /orders` | CU-07 | Sí | 201 con resumen; 409 stock insuficiente; 422 carrito vacío; 401 |
-| `orders/list-orders` | `GET /orders` | CU-08 | Sí | 200 más reciente primero; 401 |
+| `account-access/register-user` | `POST /auth/register` | CU-01 | No | 201; 400 validación; 409 correo duplicado |
+| `account-access/login-user` | `POST /auth/login` | CU-02 | No | 200 con token; 401 contraseña incorrecta; 404 cuenta inexistente |
+| `product-catalog/list-products` | `GET /products` | CU-03 | Sí | 200; 401 |
+| `product-catalog/view-product` | `GET /products/:id` | CU-04 | Sí | 200; 401; 404 |
+| `shopping-cart/view-cart` | `GET /cart` | CU-06 | Sí | 200 con líneas, cantidad y total; 401 |
+| `shopping-cart/add-cart-item` | `POST /cart/items` | CU-05 | Sí | 200; 400 cantidad inválida; 409 stock insuficiente o agotado; 404; 401 |
+| `order-checkout/place-order` | `POST /orders` | CU-07 | Sí | 201 con resumen; 409 stock insuficiente; 422 carrito vacío; 401 |
+| `order-checkout/list-orders` | `GET /orders` | CU-08 | Sí | 200 más reciente primero; 401 |
 
 La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se resuelve contra `SessionRepository`.
+
+Traducción de errores (`exceptions.plugin.ts`): los fallos de objetos de valor (`invalid_*`) responden 400; `invalid_credentials`, `invalid_session_token` y `session_required` responden 401; `account_not_found` y `product_not_found`, 404; `email_taken`, `product_out_of_stock`, `insufficient_stock` y `quantity_exceeds_stock`, 409; `empty_order`, 422. El mapa se verifica en compilación: agregar un código nuevo sin estado HTTP no compila.
 
 ### Cómo se prueba cada capa
 
@@ -334,14 +336,13 @@ La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se re
 - [ ] Reglas de `core` cubiertas por las pruebas de `testing/functions` (hoy solo verificadas con pruebas temporales).
 
 **Infra**
-- [ ] `stores`: account, session, product, cart, order (con `add` que reemplaza por id).
+- [x] `stores`: account, session, product, cart, order (con `add` que reemplaza por id), enlazados como singletons en `server.dock.ts`.
 - [x] `shared`: `bun.hasher.ts`, `system.clock.ts`, `uuid.generator.ts`, `daily.numbering.ts`.
-- [ ] `plugins`: container, auth, exceptions.
-- [ ] Enlazar stores en `server.dock.ts`.
+- [x] `plugins`: `container` (decora el contexto con el dock), `auth` (macro `auth: true` que resuelve `account` desde `Authorization: Bearer` o responde 401) y `exceptions` (`DomainError` y errores de validación a HTTP con cuerpo `{ code, message, details }`).
 
 **App** (aquí van los casos de uso)
 - [ ] 8 slices (`route.ts`, `handler.ts`, `schema.ts`) agrupados en 4 contextos con su `index.ts`; cada `handler` orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
-- [ ] Esquemas Zod por slice y traducción de `DomainError` a HTTP en `exceptions.plugin.ts`.
+- [ ] Esquemas Zod por slice (la traducción de `DomainError` a HTTP ya está en `exceptions.plugin.ts`).
 - [ ] `app.ts` con `createApp(dock)` y `scripts/server.boot.ts`.
 
 **Testing**
@@ -350,7 +351,7 @@ La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se re
 - [ ] Configuración de reportes (HTML, JSON, JUnit) hacia `reports/`.
 
 ### Riesgos técnicos a validar temprano
-- **Vitest sobre Bun:** correr con `bunx --bun vitest` y confirmar con un caso mínimo que Elysia (`app.handle`) y `Bun.password` funcionan dentro de Vitest. Si no, usar un hasher puro de prueba.
+- **Vitest sobre Bun:** resuelto. Con `bunx --bun vitest`, Elysia (`app.handle`) y `Bun.password` funcionan. Detalle: `app.handle` exige una URL con host de al menos `localhost` (`http://localhost/ruta`); con `http://x/ruta` Elysia responde 404.
 - **Alias de rutas:** resuelto con `resolve.tsconfigPaths: true` (Vite 8.3). Validado con `bunx --bun vitest run`.
 - **Reporter HTML:** requiere `@vitest/ui`, que hoy no está en `package.json`.
 - **API de dockdi:** resuelto. `createDock(overrides)` recibe un `Module` que usa `container.override(token).toValue(...)` sobre un `scope()` hijo. Validado con un test temporal (ya eliminado).
