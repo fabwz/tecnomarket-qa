@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { AuthPlugin } from "@infra/plugins/auth.plugin";
 import type { PlaceOrderHandler } from "./place-order.handler";
@@ -14,3 +15,5 @@ export class PlaceOrderPlugin {
 			.post("/orders", ({ account, status }) => status(201, this.handler.execute(account)), { auth: true });
 	}
 }
+
+export const PlaceOrderPluginToken = token(PlaceOrderPlugin);

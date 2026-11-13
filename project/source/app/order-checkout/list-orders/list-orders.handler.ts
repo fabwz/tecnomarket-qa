@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import type { Account } from "@core/account-access";
 import { BuyerId, type OrderRepository } from "@core/order-checkout";
 import { toOrderView } from "../order.view";
@@ -13,3 +14,5 @@ export class ListOrdersHandler {
 			.map(toOrderView);
 	}
 }
+
+export const ListOrdersHandlerToken = token(ListOrdersHandler);

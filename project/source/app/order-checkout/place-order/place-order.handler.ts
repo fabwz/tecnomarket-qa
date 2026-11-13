@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import type { Account } from "@core/account-access";
 import {
 	BuyerId,
@@ -59,3 +60,5 @@ export class PlaceOrderHandler {
 		return toOrderView(order);
 	}
 }
+
+export const PlaceOrderHandlerToken = token(PlaceOrderHandler);

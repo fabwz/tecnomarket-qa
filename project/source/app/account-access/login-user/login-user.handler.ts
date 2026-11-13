@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import {
 	AccountError,
 	EmailAddress,
@@ -41,3 +42,5 @@ export class LoginUserHandler {
 		};
 	}
 }
+
+export const LoginUserHandlerToken = token(LoginUserHandler);

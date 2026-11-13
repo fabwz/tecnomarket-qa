@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { AuthPlugin } from "@infra/plugins/auth.plugin";
 import type { ViewProductHandler } from "./view-product.handler";
@@ -15,3 +16,5 @@ export class ViewProductPlugin {
 			.get("/products/:id", ({ params }) => this.handler.execute(params), { auth: true, params: viewProductParams });
 	}
 }
+
+export const ViewProductPluginToken = token(ViewProductPlugin);

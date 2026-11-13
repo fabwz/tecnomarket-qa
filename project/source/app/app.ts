@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { ExceptionsPlugin } from "@infra/plugins/exceptions.plugin";
 import type { AccountAccessPlugin } from "./account-access/account-access.plugin";
@@ -23,3 +24,5 @@ export class App {
 			.use(this.orderCheckout.plugin());
 	}
 }
+
+export const AppToken = token(App);

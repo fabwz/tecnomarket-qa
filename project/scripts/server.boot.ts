@@ -1,5 +1,5 @@
 import { env } from "@env";
-import { AppToken } from "@tokens";
+import { AppToken } from "@app/app";
 import { createDock } from "./server.dock";
 
 createDock()

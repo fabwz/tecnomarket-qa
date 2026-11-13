@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { ListProductsPlugin } from "./list-products/list-products.plugin";
 import type { ViewProductPlugin } from "./view-product/view-product.plugin";
@@ -12,3 +13,5 @@ export class ProductCatalogPlugin {
 		return new Elysia().use(this.listProducts.plugin()).use(this.viewProduct.plugin());
 	}
 }
+
+export const ProductCatalogPluginToken = token(ProductCatalogPlugin);

@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import {
 	SessionError,
@@ -43,3 +44,5 @@ export class AuthPlugin {
 		}
 	}
 }
+
+export const AuthPluginToken = token(AuthPlugin);

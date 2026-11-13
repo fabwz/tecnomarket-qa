@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import type { Account } from "@core/account-access";
 import { ProductError, ProductId, type ProductRepository } from "@core/product-catalog";
 import {
@@ -39,3 +40,5 @@ export class AddCartItemHandler {
 		return toCartView(updated);
 	}
 }
+
+export const AddCartItemHandlerToken = token(AddCartItemHandler);

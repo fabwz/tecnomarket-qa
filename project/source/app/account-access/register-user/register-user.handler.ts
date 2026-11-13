@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import {
 	Account,
 	AccountError,
@@ -48,3 +49,5 @@ export class RegisterUserHandler {
 		};
 	}
 }
+
+export const RegisterUserHandlerToken = token(RegisterUserHandler);

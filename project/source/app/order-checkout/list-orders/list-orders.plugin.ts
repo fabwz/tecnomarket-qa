@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { AuthPlugin } from "@infra/plugins/auth.plugin";
 import type { ListOrdersHandler } from "./list-orders.handler";
@@ -14,3 +15,5 @@ export class ListOrdersPlugin {
 			.get("/orders", ({ account }) => this.handler.execute(account), { auth: true });
 	}
 }
+
+export const ListOrdersPluginToken = token(ListOrdersPlugin);

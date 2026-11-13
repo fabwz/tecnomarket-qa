@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import { DomainError } from "@core/shared-kernel";
 import { isKnown } from "../errors/known.errors";
@@ -16,3 +17,5 @@ export class ExceptionsPlugin {
 		});
 	}
 }
+
+export const ExceptionsPluginToken = token(ExceptionsPlugin);

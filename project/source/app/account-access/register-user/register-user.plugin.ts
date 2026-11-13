@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { RegisterUserHandler } from "./register-user.handler";
 import { registerUserBody } from "./register-user.schema";
@@ -11,3 +12,5 @@ export class RegisterUserPlugin {
 		});
 	}
 }
+
+export const RegisterUserPluginToken = token(RegisterUserPlugin);

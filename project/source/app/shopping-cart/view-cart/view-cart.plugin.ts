@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { AuthPlugin } from "@infra/plugins/auth.plugin";
 import type { ViewCartHandler } from "./view-cart.handler";
@@ -14,3 +15,5 @@ export class ViewCartPlugin {
 			.get("/cart", ({ account }) => this.handler.execute(account), { auth: true });
 	}
 }
+
+export const ViewCartPluginToken = token(ViewCartPlugin);

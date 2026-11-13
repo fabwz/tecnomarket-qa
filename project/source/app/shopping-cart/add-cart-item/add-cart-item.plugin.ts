@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { Elysia } from "elysia";
 import type { AuthPlugin } from "@infra/plugins/auth.plugin";
 import type { AddCartItemHandler } from "./add-cart-item.handler";
@@ -18,3 +19,5 @@ export class AddCartItemPlugin {
 			});
 	}
 }
+
+export const AddCartItemPluginToken = token(AddCartItemPlugin);

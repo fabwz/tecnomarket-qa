@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import { ProductError, ProductId, type ProductRepository } from "@core/product-catalog";
 import { toProductView } from "../product.view";
 import type { ViewProductParams } from "./view-product.schema";
@@ -11,3 +12,5 @@ export class ViewProductHandler {
 		return toProductView(product);
 	}
 }
+
+export const ViewProductHandlerToken = token(ViewProductHandler);

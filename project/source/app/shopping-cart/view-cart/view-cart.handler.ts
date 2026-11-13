@@ -1,3 +1,4 @@
+import { token } from "dockdi";
 import type { Account } from "@core/account-access";
 import { Cart, ShopperId, type CartRepository } from "@core/shopping-cart";
 import { toCartView } from "../cart.view";
@@ -10,3 +11,5 @@ export class ViewCartHandler {
 		return toCartView(this.carts.findByShopper(shopperId) ?? Cart.openFor(shopperId));
 	}
 }
+
+export const ViewCartHandlerToken = token(ViewCartHandler);
