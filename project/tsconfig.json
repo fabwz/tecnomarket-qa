@@ -38,6 +38,12 @@
     "types": ["@types/bun"],
 		"paths": {
 			"@env": ["./source/env.ts"],
+			"@tokens": ["./source/tokens.ts"],
+			"@core/*": ["./source/core/*"],
+			"@infra/*": ["./source/infra/*"],
+			"@app/*": ["./source/app/*"],
+			"@scripts/*": ["./scripts/*"],
+			"@testing/*": ["./testing/*"],
 		}
 	}
 }

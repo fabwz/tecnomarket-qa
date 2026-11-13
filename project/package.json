@@ -1,16 +1,19 @@
 {
   "name": "project",
-  "module": "index.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
+    "@vitest/coverage-v8": "^5.1.0",
     "vitest": "^5.1.0"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "dockdi": "^1.0.4",
+    "elysia": "^1.4.32",
+    "uuidv7": "^1.2.1",
     "zod": "^4.6.7"
   }
 }
