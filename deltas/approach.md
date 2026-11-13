@@ -162,7 +162,7 @@ Ancla con el sistema: varios riesgos ya aparecen en nuestras reglas y casos de p
 | Persistencia | Stores en memoria (`Map`). Sin SQLite ni infraestructura externa; cada prueba arranca con un contenedor nuevo. |
 | IDs | `uuidv7` para usuarios, pedidos y sesiones. El número de pedido `PED-AAAAMMDD-NNNN` es aparte (RN-12). |
 | Manejo de errores | `core` lanza `DomainError` (un tipo por sub-slice, códigos `snake_case` cerrados, definido con `DomainError.define`). Los handlers de `app` dejan propagar los errores y el plugin `exceptions` los traduce a HTTP. |
-| Unitarias (`testing/functions`) | Dos niveles: objetos de valor, entidades y políticas de `core` directamente, y los handlers de `app` invocados como funciones (sin HTTP) con un dock de prueba. |
+| Unitarias (`testing/functions`) | Dos niveles: objetos de valor, entidades y políticas de `core` directamente, y los handlers de `app` resueltos del dock de prueba (`dock.resolve(XHandlerToken).execute(...)`, sin HTTP). |
 | Integrales / E2E (`testing/integration`) | Llaman a la app Elysia en proceso con `app.handle(new Request(...))` (sin abrir puertos), en secuencia, reproduciendo el flujo de negocio. |
 | Reporte | Reporter HTML de Vitest + salida JSON/JUnit; el porcentaje de éxito se calcula del JSON. |
 
@@ -178,7 +178,8 @@ Reglas de dominio completas en `.claude/rules/code-driven-layer.md`. Resumen de 
 - **Objetos de valor:** declaración con el mismo nombre que su tipo (`kind`, `parse`, `is`); el `parse` es su único constructor y lanza el error del sub-slice.
 - **Errores:** un `DomainError.define(...)` por sub-slice, códigos `snake_case` cerrados y mensajes fijos en inglés; los datos variables viajan en `details`.
 - **Casos de uso y slices de `app`:** `acción-entidad` en kebab-case (`register-user`, `place-order`). Los flujos viven en el `handler.ts` del slice, no en `core`.
-- **Archivos por slice de `app`:** `route.ts` y `handler.ts` siempre; `schema.ts` (Zod) solo si el slice recibe cuerpo o parámetros. Las proyecciones de respuesta compartidas por varios slices de un contexto van en `<entidad>.view.ts` (`product.view.ts`, `cart.view.ts`, `order.view.ts`).
+- **Archivos por slice de `app`:** `<slice>.plugin.ts` y `<slice>.handler.ts` siempre; `<slice>.schema.ts` (Zod) solo si el slice recibe cuerpo o parámetros (`register-user.plugin.ts`, `register-user.handler.ts`, `register-user.schema.ts`). Cada contexto tiene un `<contexto>.plugin.ts` que agrupa sus slices. Las proyecciones de respuesta compartidas por varios slices van en `<entidad>.view.ts` (`product.view.ts`, `cart.view.ts`, `order.view.ts`).
+- **Clases con dependencias inyectadas:** handlers y plugins son clases cuyo constructor recibe solo lo que usan (repositorios, hasher, reloj, otros plugins), nunca el dock completo. El handler expone `execute(...)` y el plugin expone `plugin()`, que devuelve el `Elysia` del slice. El dock los enlaza con tokens y dockdi verifica en compilación que el orden y los tipos del constructor coincidan.
 - **Carpetas de `infra`:** una sola palabra de 6–7 letras → `stores`, `plugins`, `errors`, `shared`.
 - **Archivos de `infra`:** `<implementación>.<rol>.ts` → `account.store.ts`, `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`; la clase es la implementación (`BunHasher`, `DailyNumbering`).
 - **Sin comentarios** en el código: los nombres y la estructura deben explicarse solos.
@@ -196,8 +197,8 @@ app ──► core ◄── infra
 - **El core no genera ids ni lee el reloj:** recibe `now` y los ids ya creados por quien lo llama (el handler).
 - **Los flujos que cruzan contextos son flujos de `app`.** Por ejemplo `place-order` lee el carrito, retira stock de los productos, crea el pedido y vacía el carrito desde su handler.
 - Zod vive solo en `app` (esquemas HTTP de los slices); `core` valida con los `parse` de sus objetos de valor.
-- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia (auth, exceptions) y no importan `app`; `infra/errors` es la tabla de traducción de errores que usa el plugin `exceptions`.
-- `scripts/server.dock.ts` es la única raíz de composición (el contenedor dockdi de la app): enlaza tokens con implementaciones y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. Las rutas son fábricas `(dock) => Elysia` que cierran sobre el dock; así los handlers también se pueden invocar sin HTTP. Los tokens viven en `source/tokens.ts`.
+- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia, también clases (`AuthPlugin` recibe sesiones, cuentas y reloj; `ExceptionsPlugin` no recibe nada) y no importan `app`; `infra/errors` es la tabla de traducción de errores que usa el plugin `exceptions`.
+- `scripts/server.dock.ts` es la única raíz de composición (el contenedor dockdi de la app): enlaza tokens con implementaciones, handlers y plugins, y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. `source/tokens.ts` es parte de esa raíz: es el único archivo fuera de `scripts/` que conoce clases de todas las capas, porque crea un token por clase. Los tokens viven en `source/tokens.ts`.
 
 ### Estructura propuesta
 
@@ -205,10 +206,10 @@ app ──► core ◄── infra
 project/
 ├─ scripts/
 │  ├─ server.dock.ts                # raíz de composición: createDock(overrides?)
-│  └─ server.boot.ts                # arranque: createDock + createApp y escucha
+│  └─ server.boot.ts                # arranque: createDock + App.build() y escucha
 ├─ source/
 │  ├─ env.ts                        # (existe) configuración tipada
-│  ├─ tokens.ts                     # tokens dockdi de contratos
+│  ├─ tokens.ts                     # un token dockdi por contrato y por clase (parte de la raíz de composición)
 │  │
 │  ├─ core/                         # dominio: sin casos de uso, sin librerías
 │  │  ├─ shared-kernel/            # plano: sin sub-carpetas
@@ -249,8 +250,8 @@ project/
 │  │  │  ├─ status.errors.ts        # código -> estado HTTP (tabla exhaustiva verificada al compilar)
 │  │  │  └─ reply.errors.ts         # estado + cuerpo { code, message, details }
 │  │  ├─ plugins/                   # plugins de Elysia
-│  │  │  ├─ auth.plugin.ts          # macro `auth`: resuelve sesión o 401 (RN-07)
-│  │  │  └─ exceptions.plugin.ts    # onError global: delega en errors/ y responde
+│  │  │  ├─ auth.plugin.ts          # AuthPlugin: macro `auth` que resuelve la sesión o responde 401 (RN-07)
+│  │  │  └─ exceptions.plugin.ts    # ExceptionsPlugin: onError global que delega en errors/
 │  │  └─ shared/                    # adaptadores de contratos no persistentes
 │  │     ├─ bun.hasher.ts           # Bun.password (cifrado, RN-05)
 │  │     ├─ system.clock.ts
@@ -258,24 +259,24 @@ project/
 │  │     └─ daily.numbering.ts      # secuencia diaria del número de pedido
 │  │
 │  └─ app/                          # capa HTTP: slices agrupados por bounded context; el handler es el caso de uso
-│     ├─ app.ts                     # createApp(dock): ensambla plugins y contextos
+│     ├─ app.ts                     # class App: build() ensambla exceptions y los 4 contextos
 │     ├─ account-access/
-│     │  ├─ index.ts                # accountAccessRoutes(dock): agrupa los slices del contexto
+│     │  ├─ account-access.plugin.ts # AccountAccessPlugin: agrupa los slices del contexto
 │     │  ├─ register-user/          # POST /auth/register
-│     │  │  └─ route.ts · handler.ts · schema.ts
+│     │  │  └─ register-user.{plugin,handler,schema}.ts
 │     │  └─ login-user/             # POST /auth/login
 │     ├─ product-catalog/
-│     │  ├─ index.ts
+│     │  ├─ product-catalog.plugin.ts
 │     │  ├─ product.view.ts         # proyección de Product para la respuesta
 │     │  ├─ list-products/          # GET /products
 │     │  └─ view-product/           # GET /products/:id
 │     ├─ shopping-cart/
-│     │  ├─ index.ts
+│     │  ├─ shopping-cart.plugin.ts
 │     │  ├─ cart.view.ts
 │     │  ├─ view-cart/              # GET /cart
 │     │  └─ add-cart-item/          # POST /cart/items
 │     └─ order-checkout/
-│        ├─ index.ts
+│        ├─ order-checkout.plugin.ts
 │        ├─ order.view.ts
 │        ├─ place-order/            # POST /orders
 │        └─ list-orders/            # GET /orders
@@ -353,9 +354,9 @@ Decisiones de los handlers:
 - [x] `plugins`: `auth` (macro `auth: true` que resuelve `account` desde `Authorization: Bearer` o responde 401) y `exceptions` (hook `onError` delgado que usa `infra/errors`; responde con cuerpo `{ code, message, details }`).
 
 **App** (aquí van los casos de uso)
-- [x] 8 slices (`route.ts`, `handler.ts` y `schema.ts` cuando hay entrada) agrupados en 4 contextos con su `index.ts`; cada `handler` es una función `(dock, account?, input?)` que orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
+- [x] 8 slices (`<slice>.plugin.ts`, `<slice>.handler.ts` y `<slice>.schema.ts` cuando hay entrada) agrupados en 4 contextos con su `<contexto>.plugin.ts`; cada handler es una clase con sus dependencias inyectadas y un método `execute` que orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
 - [x] Esquemas Zod por slice (campos obligatorios: reportan todos los campos a la vez, CP-REG-06).
-- [x] `app.ts` con `createApp(dock)`, `source/env.ts` (`PORT`) y `scripts/server.boot.ts`. El arranque manual no carga catálogo: los productos de prueba los siembra `testing/support`.
+- [x] `app.ts` (clase `App`, resuelta con `AppToken`), `source/env.ts` (`PORT`) y `scripts/server.boot.ts`. El arranque manual no carga catálogo: los productos de prueba los siembra `testing/support`.
 
 **Testing**
 - [ ] `support/` (fixtures, test-dock, factories, api-client).

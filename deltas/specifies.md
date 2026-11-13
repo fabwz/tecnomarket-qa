@@ -279,7 +279,7 @@ Hecho:
 
 Pendiente:
 - `infra`: 5 stores en memoria, enlaces en el dock y plugins de Elysia (`container`, `auth`, `exceptions`).
-- `app`: 8 slices con sus handlers (aquí viven los casos de uso) y `createApp`.
+- `app`: 8 slices con sus handlers (aquí viven los casos de uso) y la clase `App`.
 - `testing/support`: fixtures, dock de prueba con seed, fábricas y cliente de API.
 - Escribir los 66 casos unitarios y los 3 escenarios E2E.
 - Configurar el reporte (HTML + JSON/JUnit); falta `@vitest/ui` para el HTML.
