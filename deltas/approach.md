@@ -393,8 +393,8 @@ Criterio de "excelente" en lo automatizado: **todas** las pruebas implementadas 
 
 ## 7. Orden de trabajo sugerido
 
-1. Validar Bun + Vitest con un caso mínimo (resuelve el riesgo técnico principal).
-2. Construir el sistema mínimo: `core` (reglas y casos de uso) e `infra` primero, slices de `app` después.
+1. Validar Bun + Vitest con un caso mínimo (resuelve el riesgo técnico principal). **Hecho.**
+2. Construir el sistema mínimo: modelo de dominio en `core` (**hecho**), luego `infra` (stores, plugins) y por último los slices de `app`, donde viven los casos de uso (handlers).
 3. Armar `testing/support` (fixtures, test-dock, factories, cliente) (de ahí dependen todas las pruebas).
 4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro.
 5. Escribir los 3 escenarios en `testing/integration`.

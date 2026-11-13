@@ -69,6 +69,22 @@ Se restauran antes de **cada** prueba para garantizar independencia y repetibili
 | `testing/functions/compras.test.ts` | 7 | Pendiente |
 | `testing/functions/historial.test.ts` | 6 | Pendiente |
 
+### Qué ejercita cada archivo
+
+| Archivo | Piezas bajo prueba |
+|---|---|
+| `registro.test.ts`, `password.test.ts` | Objetos de valor de `account-access` (`FullName`, `EmailAddress`, `PhoneNumber`, `PlainPassword`), `Account.register` y el handler `register-user`. |
+| `login.test.ts` | Handler `login-user`, `Session.start` y su vencimiento (`isActiveAt`). |
+| `catalogo.test.ts` | `Product.isInStock` y los handlers `list-products` y `view-product`. |
+| `carrito.test.ts` | `Cart.addItem`, `ItemQuantity` y los handlers `add-cart-item` y `view-cart`. |
+| `compras.test.ts` | Handler `place-order`: `Product.withdraw`, `Order.place`, `OrderNumbering` y `Cart.clear`. |
+| `historial.test.ts` | Handler `list-orders` (orden y aislamiento por comprador). |
+
+Dos ajustes de lectura, porque el sistema es una API sin interfaz:
+
+- Donde el caso dice "redirección al inicio de sesión" (CP-LOG-09, CP-CAT-03, CP-DET-04, CP-CAR-11, CP-REV-03, CP-COM-06, CP-HIS-05) el resultado esperado es **401 con `session_required`**. Esos casos pasan por el plugin `auth`, es decir, por `app.handle`; el vencimiento de la sesión se valida además en `Session.isActiveAt`.
+- Donde el caso dice "mensaje de campo obligatorio en cada campo" (CP-REG-06) el reporte de todos los campos lo da la validación de forma de `app` (Zod). Los objetos de valor de `core` lanzan solo el primer error, que es lo que verifica el nivel unitario de dominio.
+
 ## 4. Casos de prueba unitarios
 
 Técnicas: partición de equivalencia, valores límite, positivos y negativos. Los casos de contraseña (CP-REG-14 a CP-REG-21) van en `password.test.ts` porque prueban el validador de contraseña y no el flujo de registro.
@@ -257,11 +273,17 @@ Estado: Pendiente
 
 ## 7. Qué falta antes de poder ejecutar
 
-- Construir el sistema mínimo (validadores, servicios, repositorios y API).
-- Helpers compartidos: fábricas, cliente de API, seed y limpieza.
-- Configurar Vitest y el reporte (HTML + JSON/JUnit).
+Hecho:
+- Configuración de Vitest con alias de rutas y dock de composición con `override` para pruebas.
+- Modelo de dominio en `core` (kernel compartido y 4 contextos) y adaptadores `infra/shared` (reloj, ids, hasher, numeración de pedidos).
+
+Pendiente:
+- `infra`: 5 stores en memoria, enlaces en el dock y plugins de Elysia (`container`, `auth`, `exceptions`).
+- `app`: 8 slices con sus handlers (aquí viven los casos de uso) y `createApp`.
+- `testing/support`: fixtures, dock de prueba con seed, fábricas y cliente de API.
 - Escribir los 66 casos unitarios y los 3 escenarios E2E.
-- Ajustar la matriz de trazabilidad del documento si la extensión final es `.test.ts` y se renombran los archivos de E2E.
+- Configurar el reporte (HTML + JSON/JUnit); falta `@vitest/ui` para el HTML.
+- Ajustar la matriz de trazabilidad del documento (extensión `.test.ts` y rutas `testing/functions` y `testing/integration`).
 
 ## 8. Registro de defectos
 
