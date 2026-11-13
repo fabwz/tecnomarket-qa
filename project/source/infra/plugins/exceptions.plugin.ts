@@ -8,7 +8,11 @@ const send = (set: { status?: number | string }, { status, body }: Reply) => {
 	return body;
 };
 
-export const exceptionsPlugin = new Elysia({ name: "exceptions" }).onError({ as: "global" }, ({ error, code, set }) => {
-	if (error instanceof DomainError && isKnown(error)) return send(set, replyToDomain(error));
-	if (code === "VALIDATION") return send(set, replyToValidation(error));
-});
+export class ExceptionsPlugin {
+	plugin() {
+		return new Elysia({ name: "exceptions" }).onError({ as: "global" }, ({ error, code, set }) => {
+			if (error instanceof DomainError && isKnown(error)) return send(set, replyToDomain(error));
+			if (code === "VALIDATION") return send(set, replyToValidation(error));
+		});
+	}
+}

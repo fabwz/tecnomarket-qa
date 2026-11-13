@@ -1,5 +1,8 @@
-import { createApp } from "@app/app";
 import { env } from "@env";
+import { AppToken } from "@tokens";
 import { createDock } from "./server.dock";
 
-createApp(createDock()).listen(env.PORT, ({ hostname, port }) => console.log(`TecnoMarket listening on ${hostname}:${port}`));
+createDock()
+	.resolve(AppToken)
+	.build()
+	.listen(env.PORT, ({ hostname, port }) => console.log(`TecnoMarket listening on ${hostname}:${port}`));
