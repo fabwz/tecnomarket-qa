@@ -157,26 +157,31 @@ Ancla con el sistema: varios riesgos ya aparecen en nuestras reglas y casos de p
 | Runtime | Bun. |
 | Framework de pruebas | Vitest (ejecutado con `bunx --bun vitest`). |
 | HTTP | Elysia. Solo backend (API), sin frontend. |
-| Validación | Zod 4. Las reglas de dominio (RN-02 a RN-05, RN-08) se definen una sola vez en `core` como esquemas Zod y los esquemas HTTP las reutilizan. |
+| Validación | Dos niveles. `core` valida con los `parse` de sus objetos de valor (RN-02 a RN-05, RN-08), sin librerías. `app` valida la forma de la petición con Zod 4 en el `schema.ts` de cada slice. |
 | Inyección de dependencias | dockdi: tokens tipados, el compilador valida que los argumentos del constructor coincidan. |
 | Persistencia | Stores en memoria (`Map`). Sin SQLite ni infraestructura externa; cada prueba arranca con un contenedor nuevo. |
 | IDs | `uuidv7` para usuarios, pedidos y sesiones. El número de pedido `PED-AAAAMMDD-NNNN` es aparte (RN-12). |
-| Manejo de errores | Los casos de uso devuelven `Result<T, E>` con `Exception` tipadas (unión discriminada por `code`, definida en `core/kernel/exceptions.ts`). No se lanza nada por reglas de negocio. Solo el plugin `exceptions` las traduce a HTTP. |
-| Unitarias (`testing/functions`) | Llaman directamente a validadores y casos de uso de `core`, con stores en memoria. Sin Elysia. |
+| Manejo de errores | `core` lanza `DomainError` (un tipo por sub-slice, códigos `snake_case` cerrados, definido con `DomainError.define`). Los handlers de `app` dejan propagar los errores y el plugin `exceptions` los traduce a HTTP. |
+| Unitarias (`testing/functions`) | Dos niveles: objetos de valor, entidades y políticas de `core` directamente, y los handlers de `app` invocados como funciones (sin HTTP) con un dock de prueba. |
 | Integrales / E2E (`testing/integration`) | Llaman a la app Elysia en proceso con `app.handle(new Request(...))` (sin abrir puertos), en secuencia, reproduciendo el flujo de negocio. |
 | Reporte | Reporter HTML de Vitest + salida JSON/JUnit; el porcentaje de éxito se calcula del JSON. |
 
 ### Convenciones de nombres
 
-- **Bounded contexts** (en `core` y en `app`): sustantivo en plural, 5–7 letras → `kernel`, `users`, `catalog`, `carts`, `orders`.
-- **Casos de uso y slices:** `acción-entidad` en kebab-case, mismo nombre en `core` y en `app` (un caso de uso en `core` ↔ un slice en `app`).
-- **Archivos fijos por contexto:** `entity.ts` y `contracts.ts`; `rules.ts` solo cuando el contexto tiene reglas propias (`orders` no las tiene: sus reglas viven en `place-order`).
-- **Archivos fijos por slice:** `route.ts`, `handler.ts`, `schema.ts`.
+Reglas de dominio completas en `.claude/rules/code-driven-layer.md`. Resumen de lo que aplica aquí:
+
+- **Bounded contexts** en `core`: par de dos palabras, la segunda describe el contexto y no se repite como sufijo → `shared-kernel`, `account-access`, `product-catalog`, `shopping-cart`, `order-checkout`.
+- **Sub-slices** dentro de cada contexto: una palabra corta (`account`, `session`, `product`, `cart`, `order`). Los archivos son `<subslice>.<tipo>.ts` y solo existen los tipos necesarios: `entity`, `parts`, `vos`, `policies`, `errors`, `repository` y roles (`hasher`, `numbering`, `clock`, `generator`). No hay archivo `contracts`.
+- **Barrel:** un `index.ts` en la raíz de cada contexto re-exporta todo; desde fuera solo se importa `@core/<contexto>`, nunca una subcarpeta.
+- **Nombres exportados** únicos dentro del contexto y con su sustantivo completo (`AccountId`, `EmailAddress`, `OrderNumber`; no `Id`).
+- **Objetos de valor:** declaración con el mismo nombre que su tipo (`kind`, `parse`, `is`); el `parse` es su único constructor y lanza el error del sub-slice.
+- **Errores:** un `DomainError.define(...)` por sub-slice, códigos `snake_case` cerrados y mensajes fijos en inglés; los datos variables viajan en `details`.
+- **Casos de uso y slices de `app`:** `acción-entidad` en kebab-case (`register-user`, `place-order`). Los flujos viven en el `handler.ts` del slice, no en `core`.
+- **Archivos fijos por slice de `app`:** `route.ts`, `handler.ts`, `schema.ts`.
 - **Carpetas de `infra`:** una sola palabra de 6–7 letras → `stores`, `plugins`, `shared`.
-- **Archivos de `infra`:** `<implementación>.<rol>.ts` → `user.store.ts`, `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`; la clase es `<Implementación><Rol>`.
+- **Archivos de `infra`:** `<implementación>.<rol>.ts` → `account.store.ts`, `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`; la clase es la implementación (`BunHasher`, `DailyNumbering`).
 - **Sin comentarios** en el código: los nombres y la estructura deben explicarse solos.
 - **Idioma del código:** identificadores y mensajes de error en inglés (`.claude/rules/code-english-only.md`); la documentación sigue en español.
-- Los puertos de persistencia se llaman `*Store` (no `*Repository`).
 
 ### Regla de dependencias entre capas
 
@@ -185,11 +190,12 @@ app ──► core ◄── infra
  └─► infra/plugins   (único punto de infra que app puede importar)
 ```
 
-- `core` no importa nada de `app`, `infra`, Elysia ni dockdi. Define los **puertos** (`contracts.ts`) y `infra` los implementa.
-- Dentro de `core`, `carts` y `orders` pueden importar de `catalog` y `carts` (flujo de compra); ningún contexto importa de `orders`, y `users` no depende de ninguno.
-- `infra/stores` e `infra/shared` implementan los puertos de `core`.
-- `infra/plugins` son plugins de Elysia (container, auth, exceptions); consumen casos de uso de `core` vía el contenedor y no importan `app`.
-- `app` solo usa casos de uso de `core` (vía contenedor) y los plugins de `infra/plugins`.
+- `core` no importa nada de `app`, `infra`, Elysia, Zod, dockdi ni ninguna librería de framework o I/O. Lo que necesita de afuera lo declara como contrato (`*.repository.ts`, `*.hasher.ts`, `*.numbering.ts`, `system.clock.ts`) y `infra` lo implementa.
+- **Un contexto solo importa `shared-kernel`, nunca otro contexto.** Se refieren entre sí solo por id, con su propio objeto de valor (`ShopperId`, `BuyerId`, `CartProductId`, `LineProductId`).
+- **El core no genera ids ni lee el reloj:** recibe `now` y los ids ya creados por quien lo llama (el handler).
+- **Los flujos que cruzan contextos son flujos de `app`.** Por ejemplo `place-order` lee el carrito, retira stock de los productos, crea el pedido y vacía el carrito desde su handler.
+- Zod vive solo en `app` (esquemas HTTP de los slices); `core` valida con los `parse` de sus objetos de valor.
+- `infra/stores` e `infra/shared` implementan los contratos de `core`. `infra/plugins` son plugins de Elysia (container, auth, exceptions) y no importan `app`.
 - `scripts/server.dock.ts` es la única raíz de composición (el contenedor dockdi de la app): enlaza tokens con implementaciones y exporta `createDock(overrides?)`. Lo usan `server.boot.ts` y `testing/support`. Los tokens viven en `source/tokens.ts`.
 
 ### Estructura propuesta
@@ -201,72 +207,68 @@ project/
 │  └─ server.boot.ts                # arranque: createDock + createApp y escucha
 ├─ source/
 │  ├─ env.ts                        # (existe) configuración tipada
-│  ├─ tokens.ts                     # tokens dockdi de puertos y casos de uso
+│  ├─ tokens.ts                     # tokens dockdi de contratos
 │  │
-│  ├─ core/                         # dominio: puro, sin dependencias de framework
-│  │  ├─ kernel/
-│  │  │  ├─ response.ts             # Result<T, E>, ok(), err()
-│  │  │  ├─ validation.ts           # parse(schema, input) -> Result con validation_failed
-│  │  │  ├─ exceptions.ts           # Exception (unión discriminada por code) + constructores
-│  │  │  └─ contracts.ts            # Clock, IdGenerator
-│  │  ├─ users/
-│  │  │  ├─ entity.ts               # User, Session
-│  │  │  ├─ rules.ts                # Zod: nombre, correo, teléfono, contraseña
-│  │  │  ├─ contracts.ts            # UserStore, SessionStore, PasswordHasher
-│  │  │  ├─ register-user.ts        # CU-01
-│  │  │  ├─ login-user.ts           # CU-02 (sesión con vencimiento de 30 min)
-│  │  │  └─ resolve-session.ts      # token -> perfil, o session_required (lo usa el plugin auth)
-│  │  ├─ catalog/
-│  │  │  ├─ entity.ts               # Product
-│  │  │  ├─ rules.ts                # disponibilidad (stock > 0) y vista del producto
-│  │  │  ├─ contracts.ts            # ProductStore
-│  │  │  ├─ list-products.ts        # CU-03
-│  │  │  └─ view-product.ts         # CU-04
-│  │  ├─ carts/
-│  │  │  ├─ entity.ts               # Cart y funciones puras (agregar línea, cantidad, total)
-│  │  │  ├─ rules.ts                # cantidad entera ≥ 1 (el tope de stock se valida en add-cart-item)
-│  │  │  ├─ contracts.ts            # CartStore
-│  │  │  ├─ add-cart-item.ts        # CU-05
-│  │  │  └─ view-cart.ts            # CU-06
-│  │  └─ orders/
-│  │     ├─ entity.ts               # Order, OrderLine
-│  │     ├─ contracts.ts            # OrderStore, OrderNumberGenerator
-│  │     ├─ place-order.ts          # CU-07 (todo o nada, RN-13)
-│  │     └─ list-orders.ts          # CU-08
+│  ├─ core/                         # dominio: sin casos de uso, sin librerías
+│  │  ├─ shared-kernel/
+│  │  │  ├─ value/value.vos.ts      # Distinct, text(), whole(), identifier()
+│  │  │  ├─ entity/entity.entity.ts # Entity base: congelada, restore, sameAs, with
+│  │  │  ├─ error/error.errors.ts   # DomainError.define
+│  │  │  ├─ system/system.clock.ts       # contrato Clock
+│  │  │  ├─ system/system.generator.ts   # contrato IdGenerator
+│  │  │  └─ index.ts
+│  │  ├─ account-access/
+│  │  │  ├─ account/                # Account (+ AccountId, EmailAddress, FullName, PhoneNumber, PlainPassword, PasswordHash)
+│  │  │  │  └─ account.{entity,vos,errors,repository,hasher}.ts
+│  │  │  ├─ session/                # Session con vencimiento de 30 min
+│  │  │  │  └─ session.{entity,vos,policies,errors,repository}.ts
+│  │  │  └─ index.ts
+│  │  ├─ product-catalog/
+│  │  │  ├─ product/                # Product: isInStock(), withdraw(units)
+│  │  │  │  └─ product.{entity,vos,errors,repository}.ts
+│  │  │  └─ index.ts
+│  │  ├─ shopping-cart/
+│  │  │  ├─ cart/                   # Cart (raíz) y CartLine (parte); regla de stock acumulado
+│  │  │  │  └─ cart.{entity,parts,vos,policies,errors,repository}.ts
+│  │  │  └─ index.ts
+│  │  └─ order-checkout/
+│  │     ├─ order/                  # Order (raíz) y OrderLine (parte); Order.place exige al menos una línea
+│  │     │  └─ order.{entity,parts,vos,errors,repository,numbering}.ts
+│  │     └─ index.ts
 │  │
 │  ├─ infra/
-│  │  ├─ stores/                    # implementaciones en memoria de los *Store
-│  │  │  ├─ user.store.ts
-│  │  │  ├─ session.store.ts        # token opaco -> userId
+│  │  ├─ stores/                    # implementaciones en memoria de los *Repository
+│  │  │  ├─ account.store.ts
+│  │  │  ├─ session.store.ts
 │  │  │  ├─ product.store.ts
 │  │  │  ├─ cart.store.ts
 │  │  │  └─ order.store.ts
 │  │  ├─ plugins/                   # plugins de Elysia
 │  │  │  ├─ container.plugin.ts     # expone el contenedor al contexto
 │  │  │  ├─ auth.plugin.ts          # macro `auth`: resuelve sesión o 401 (RN-07)
-│  │  │  └─ exceptions.plugin.ts    # Exception -> código HTTP + cuerpo uniforme
-│  │  └─ shared/                    # adaptadores de puertos no persistentes
+│  │  │  └─ exceptions.plugin.ts    # DomainError -> código HTTP + cuerpo uniforme
+│  │  └─ shared/                    # adaptadores de contratos no persistentes
 │  │     ├─ bun.hasher.ts           # Bun.password (cifrado, RN-05)
 │  │     ├─ system.clock.ts
 │  │     ├─ uuid.generator.ts       # uuidv7
-│  │     └─ daily.generator.ts      # secuencia diaria del número de pedido
+│  │     └─ daily.numbering.ts      # secuencia diaria del número de pedido
 │  │
-│  └─ app/                          # capa HTTP: slices agrupados por bounded context
+│  └─ app/                          # capa HTTP: slices agrupados por bounded context; el handler es el caso de uso
 │     ├─ app.ts                     # createApp(dock): ensambla plugins y contextos
-│     ├─ users/
+│     ├─ account-access/
 │     │  ├─ index.ts                # agrupa los slices del contexto
 │     │  ├─ register-user/          # POST /auth/register
-│     │  │  ├─ route.ts · handler.ts · schema.ts
+│     │  │  └─ route.ts · handler.ts · schema.ts
 │     │  └─ login-user/             # POST /auth/login
-│     ├─ catalog/
+│     ├─ product-catalog/
 │     │  ├─ index.ts
 │     │  ├─ list-products/          # GET /products
 │     │  └─ view-product/           # GET /products/:id
-│     ├─ carts/
+│     ├─ shopping-cart/
 │     │  ├─ index.ts
 │     │  ├─ view-cart/              # GET /cart
 │     │  └─ add-cart-item/          # POST /cart/items
-│     └─ orders/
+│     └─ order-checkout/
 │        ├─ index.ts
 │        ├─ place-order/            # POST /orders
 │        └─ list-orders/            # GET /orders
@@ -306,38 +308,39 @@ project/
 | `orders/place-order` | `POST /orders` | CU-07 | Sí | 201 con resumen; 409 stock insuficiente; 422 carrito vacío; 401 |
 | `orders/list-orders` | `GET /orders` | CU-08 | Sí | 200 más reciente primero; 401 |
 
-La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se resuelve contra `SessionStore`.
+La sesión viaja como `Authorization: Bearer <token>`; el token es opaco y se resuelve contra `SessionRepository`.
 
 ### Cómo se prueba cada capa
 
 - **Aislamiento por prueba:** `createDock(overrides?)` (en `scripts/server.dock.ts`) devuelve un contenedor nuevo con stores vacíos y acepta `overrides` (un `Module` de dockdi). `beforeEach` crea uno y carga el seed (U1–U3, P-001–P-004); no hay estado global que limpiar. La "limpieza posterior" de los E2E se cumple descartando el dock en `afterEach`.
-- **Determinismo:** `Clock`, `IdGenerator` y `OrderNumberGenerator` son puertos. Las pruebas inyectan versiones fijas (fecha, ids), así `PED-AAAAMMDD-NNNN` es predecible.
+- **Determinismo:** `Clock`, `IdGenerator` y `OrderNumbering` son contratos; el core no los llama, los handlers sí. Las pruebas inyectan versiones fijas (fecha, ids), así `PED-AAAAMMDD-NNNN` es predecible.
 - **Hash en pruebas:** `PasswordHasher` real con costo bajo, o una versión rápida inyectada para las unitarias; un caso verifica que lo guardado no es la contraseña en claro.
-- **Seguridad de tipos en pruebas:** los tests aserten sobre `result.ok` y `result.error.code`, no sobre mensajes de texto.
+- **Seguridad de tipos en pruebas:** los tests aserten sobre `error.code` del `DomainError`, no sobre mensajes de texto. Los objetos de valor lanzan solo el primer error, así que el "mensaje por cada campo" de CP-REG-06 lo cubre la validación de forma de `app` (Zod), que reporta todos los campos.
 
 ### Qué hay que implementar (checklist)
 
 **Base**
 - [x] `tsconfig`: alias `@env`, `@tokens`, `@core/*`, `@infra/*`, `@app/*`, `@scripts/*`, `@testing/*`. `vitest.config.ts` los toma con `resolve.tsconfigPaths: true` (Vite 8), sin duplicarlos.
-- [x] `core/kernel`: `Result`, `Exception` (con constructores) y puertos `Clock` / `IdGenerator`.
-- [x] `source/tokens.ts` (tokens del kernel; los de cada contexto se agregan con su implementación).
 - [x] `scripts/server.dock.ts` con `createDock(overrides?)`: contenedor nuevo por llamada, `override` aplicado sobre un `scope()` hijo.
-- [x] `infra/shared`: `system.clock.ts`, `uuid.generator.ts`, `bun.hasher.ts`, `daily.generator.ts` (los dos últimos con sus contratos en `users/contracts.ts` y `orders/contracts.ts`).
+- [x] `source/tokens.ts` con los tokens de contratos (reloj, ids, hasher, numeración y los 5 repositorios).
 
-**Core** (`entity.ts`, `contracts.ts` y, si aplica, `rules.ts` por contexto, más los casos de uso)
-- [x] `kernel/validation.ts` (`parse` con Zod).
-- [x] `users`: reglas Zod (nombre, correo normalizado a minúsculas, teléfono, contraseña; RN-02 a RN-05), `register-user`, `login-user`, `resolve-session`.
-- [x] `catalog`: `list-products`, `view-product`.
-- [x] `carts`: funciones puras del carrito, `add-cart-item`, `view-cart` (RN-08 a RN-10).
-- [x] `orders`: `place-order`, `list-orders` (RN-11 a RN-14).
+**Core** (modelo de dominio; sin casos de uso)
+- [x] `shared-kernel`: `Distinct`, `text()`, `whole()`, `identifier()`, `Entity`, `DomainError.define`, contratos `Clock` e `IdGenerator`.
+- [x] `account-access`: `Account`, `Session`, objetos de valor, política de vencimiento, contratos de repositorio y `PasswordHasher` (RN-01 a RN-06).
+- [x] `product-catalog`: `Product` con `isInStock()` y `withdraw()` (RN-08, RN-12).
+- [x] `shopping-cart`: `Cart`, `CartLine`, política de stock acumulado (RN-08 a RN-10).
+- [x] `order-checkout`: `Order`, `OrderLine`, `OrderNumbering` (RN-11, RN-12, RN-14).
+- [ ] Reglas de `core` cubiertas por las pruebas de `testing/functions` (hoy solo verificadas con pruebas temporales).
 
 **Infra**
-- [ ] `stores`: user, session, product, cart, order.
-- [x] `shared`: `bun.hasher.ts` (bcrypt síncrono) y `daily.generator.ts`, con sus contratos en `users` y `orders`.
+- [ ] `stores`: account, session, product, cart, order (con `add` que reemplaza por id).
+- [x] `shared`: `bun.hasher.ts`, `system.clock.ts`, `uuid.generator.ts`, `daily.numbering.ts`.
 - [ ] `plugins`: container, auth, exceptions.
+- [ ] Enlazar stores en `server.dock.ts`.
 
-**App**
-- [ ] 8 slices (`route.ts`, `handler.ts`, `schema.ts`) agrupados en 4 contextos con su `index.ts`.
+**App** (aquí van los casos de uso)
+- [ ] 8 slices (`route.ts`, `handler.ts`, `schema.ts`) agrupados en 4 contextos con su `index.ts`; cada `handler` orquesta los contextos (por ejemplo, `place-order`: validar stock de cada línea → `Product.withdraw` → `Order.place` → guardar → `Cart.clear`). Todo o nada (RN-13): se valida todo antes de guardar algo.
+- [ ] Esquemas Zod por slice y traducción de `DomainError` a HTTP en `exceptions.plugin.ts`.
 - [ ] `app.ts` con `createApp(dock)` y `scripts/server.boot.ts`.
 
 **Testing**
