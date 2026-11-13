@@ -1,7 +1,6 @@
 import type { OrderNumberGenerator } from "@core/orders/contracts";
 
 export class DailyGenerator implements OrderNumberGenerator {
-	// shortcut: counters live in memory and restart with the process, move to the order store if numbers must survive restarts
 	private readonly counters = new Map<string, number>();
 
 	next(date: Date): string {

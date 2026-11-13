@@ -12,7 +12,7 @@ const sharedModule: Module = (c) => {
 	c.bind(OrderNumberGeneratorToken).toClass(DailyGenerator).inSingleton();
 };
 
-/** Composition root: every call returns a fresh, isolated container. `overrides` swaps bindings (fixed clock, fast hasher...). */
+
 export function createDock(overrides?: Module): Container {
 	const dock = new Container().load(sharedModule).scope();
 	overrides?.(dock);
