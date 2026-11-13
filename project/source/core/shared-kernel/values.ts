@@ -1,4 +1,4 @@
-import type { DomainError, ErrorDetails } from "../error/error.errors";
+import type { DomainError, ErrorDetails } from "./errors";
 
 declare const kindBrand: unique symbol;
 
@@ -10,7 +10,7 @@ export type ValueObject<Base, Kind extends string> = {
 	readonly is: (value: unknown) => value is Distinct<Base, Kind>;
 };
 
-type Failure = (details: ErrorDetails) => DomainError;
+export type Failure = (details: ErrorDetails) => DomainError;
 
 export type TextRules = {
 	readonly min?: number;
@@ -53,8 +53,4 @@ export function whole<Kind extends string>(kind: Kind, rules: WholeRules, fail: 
 			return valid(value);
 		},
 	};
-}
-
-export function identifier<Kind extends string>(kind: Kind, fail: Failure): ValueObject<string, Kind> {
-	return text(kind, { min: 1, max: 64 }, fail);
 }
