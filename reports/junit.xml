@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="71" failures="0" errors="0" time="0.2316233">
+    <testsuite name="testing/functions/cart.test.ts" timestamp="2026-11-16T16:12:47.457Z" hostname="ace" tests="14" failures="0" errors="0" skipped="0" time="0.0178127">
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-01 adds the minimum quantity of 1" time="0.0049373">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-02 accumulates the same product in a single line" time="0.0021378">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-03 adds two different products" time="0.0005959">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-04 zero quantity is rejected and the cart does not change" time="0.0008133">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-05 negative quantity is rejected and the cart does not change" time="0.0005239">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-06 accepts a quantity equal to the stock" time="0.0004852">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-07 rejects a quantity one above the stock" time="0.0007815">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-08 rejects an accumulated quantity above the stock" time="0.0005126">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-09 rejects a non numeric or decimal quantity" time="0.0018793">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-10 rejects a product without stock" time="0.0003965">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-CAR-11 does not modify any cart with an expired session" time="0.0005225">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-REV-01 lists the lines with subtotals that add up to the total" time="0.000585">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-REV-02 shows an empty cart for a user without products" time="0.0003736">
+        </testcase>
+        <testcase classname="testing/functions/cart.test.ts" name="Shopping cart &gt; CP-REV-03 requires a session to open the cart" time="0.0002652">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/functions/catalog.test.ts" timestamp="2026-11-16T16:12:47.470Z" hostname="ace" tests="8" failures="0" errors="0" skipped="0" time="0.0217489">
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-CAT-01 lists every product with name, price and availability" time="0.0102114">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-CAT-02 returns an empty list when there are no products" time="0.0016018">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-CAT-03 requires a session to list the catalog" time="0.0016893">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-CAT-04 marks a product without stock as unavailable" time="0.0010948">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-DET-01 shows the detail of an existing product" time="0.0013001">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-DET-02 shows the detail of a sold out product flagged as unavailable" time="0.0005899">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-DET-03 reports a product that does not exist" time="0.0004685">
+        </testcase>
+        <testcase classname="testing/functions/catalog.test.ts" name="Product catalog &gt; CP-DET-04 requires a session to view a product detail" time="0.0004563">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/functions/checkout.test.ts" timestamp="2026-11-16T16:12:47.471Z" hostname="ace" tests="8" failures="0" errors="0" skipped="0" time="0.0196909">
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-01 places an order with two products" time="0.0096279">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-02 gives a different order number to consecutive purchases" time="0.0015947">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-03 refuses an empty cart without consuming an order number" time="0.0009375">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-04 refuses the purchase when the stock dropped, leaving everything untouched" time="0.0006437">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-05 saves a single order when the confirmation is sent twice" time="0.0005914">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-06 saves no order with an expired session" time="0.0009157">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-07 keeps the total consistent between the summary and the saved order" time="0.0009082">
+        </testcase>
+        <testcase classname="testing/functions/checkout.test.ts" name="Order placement &gt; CP-COM-08 allows buying the whole available stock and leaves it at zero" time="0.0008684">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/functions/history.test.ts" timestamp="2026-11-16T16:12:47.472Z" hostname="ace" tests="6" failures="0" errors="0" skipped="0" time="0.018995">
+        <testcase classname="testing/functions/history.test.ts" name="Order history &gt; CP-HIS-01 lists the orders of a user with date, number, items and amount" time="0.0088767">
+        </testcase>
+        <testcase classname="testing/functions/history.test.ts" name="Order history &gt; CP-HIS-02 returns an empty list for a user without orders" time="0.0009509">
+        </testcase>
+        <testcase classname="testing/functions/history.test.ts" name="Order history &gt; CP-HIS-03 lists the most recent order first whatever the storage order" time="0.0010539">
+        </testcase>
+        <testcase classname="testing/functions/history.test.ts" name="Order history &gt; CP-HIS-04 does not show orders of other users" time="0.0010585">
+        </testcase>
+        <testcase classname="testing/functions/history.test.ts" name="Order history &gt; CP-HIS-05 requires a session to open the history" time="0.0006313">
+        </testcase>
+        <testcase classname="testing/functions/history.test.ts" name="Order history &gt; CP-HIS-06 shows a newly placed order first with the amount of the purchase" time="0.0023886">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/functions/login.test.ts" timestamp="2026-11-16T16:12:47.473Z" hostname="ace" tests="11" failures="0" errors="0" skipped="0" time="0.0167091">
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-01 grants access with valid credentials" time="0.0067361">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-02 rejects a wrong password" time="0.0008131">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-03 rejects an account that does not exist" time="0.0004971">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-04 rejects an empty email" time="0.002462">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-05 rejects an empty password" time="0.0004964">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-06 rejects an email with an invalid format" time="0.000374">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-07 treats the password as case sensitive" time="0.0003427">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-08 treats the email as case insensitive" time="0.0003832">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-09 requires an active session to enter protected resources" time="0.0006631">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-09 rejects an expired session after 30 minutes" time="0.0006361">
+        </testcase>
+        <testcase classname="testing/functions/login.test.ts" name="User login &gt; CP-LOG-10 handles an SQL injection attempt as a plain invalid email" time="0.0004894">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/functions/password.test.ts" timestamp="2026-11-16T16:12:47.474Z" hostname="ace" tests="8" failures="0" errors="0" skipped="0" time="0.0207491">
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-14 with the minimum of 8 characters: registers the user" time="0.0072362">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-20 with the maximum of 64 characters: registers the user" time="0.0007553">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-15 with 7 characters: rejects the password and reports what is missing" time="0.0028124">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-16 without uppercase: rejects the password and reports what is missing" time="0.0008875">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-17 without lowercase: rejects the password and reports what is missing" time="0.0007237">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-18 without number: rejects the password and reports what is missing" time="0.0007191">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-19 without special character: rejects the password and reports what is missing" time="0.0024446">
+        </testcase>
+        <testcase classname="testing/functions/password.test.ts" name="Password validation &gt; CP-REG-21 with 65 characters: rejects the password and reports what is missing" time="0.0009803">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/functions/registration.test.ts" timestamp="2026-11-16T16:12:47.475Z" hostname="ace" tests="13" failures="0" errors="0" skipped="0" time="0.0345718">
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-01 registers a user with valid data" time="0.0147297">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-02 rejects an email that is already registered" time="0.0014218">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-03 rejects a duplicated email written in uppercase" time="0.0008045">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-04 without at sign: rejects an invalid email" time="0.0008728">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-05 without domain: rejects an invalid email" time="0.0009094">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-06 rejects empty fields, reporting every missing one at the request shape level" time="0.0060521">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-07 accepts a full name with the minimum of 3 characters" time="0.0023281">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-08 rejects a full name with 2 characters" time="0.0007965">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-09 accepts a full name with the maximum of 100 characters" time="0.0008158">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-10 rejects a full name with 101 characters" time="0.0006538">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-11 with 7 digits: rejects an invalid phone" time="0.0006258">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-12 with 9 digits: rejects an invalid phone" time="0.0003321">
+        </testcase>
+        <testcase classname="testing/functions/registration.test.ts" name="User registration &gt; CP-REG-13 with letters: rejects an invalid phone" time="0.0002028">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/integration/scenario1-registration-checkout.test.ts" timestamp="2026-11-16T16:12:47.477Z" hostname="ace" tests="1" failures="0" errors="0" skipped="0" time="0.0278331">
+        <testcase classname="testing/integration/scenario1-registration-checkout.test.ts" name="E2E-01 Registration, login, add to cart and checkout &gt; takes a new user from registration to a placed order" time="0.0256498">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/integration/scenario2-login-checkout.test.ts" timestamp="2026-11-16T16:12:47.477Z" hostname="ace" tests="1" failures="0" errors="0" skipped="0" time="0.0292141">
+        <testcase classname="testing/integration/scenario2-login-checkout.test.ts" name="E2E-02 Login, browse products, add products and checkout &gt; takes a registered user from login to a placed order" time="0.0268789">
+        </testcase>
+    </testsuite>
+    <testsuite name="testing/integration/scenario3-history.test.ts" timestamp="2026-11-16T16:12:47.477Z" hostname="ace" tests="1" failures="0" errors="0" skipped="0" time="0.0242986">
+        <testcase classname="testing/integration/scenario3-history.test.ts" name="E2E-03 Login and order history &gt; shows the order history of a user, newest first and isolated from other users" time="0.0222097">
+        </testcase>
+    </testsuite>
+</testsuites>
