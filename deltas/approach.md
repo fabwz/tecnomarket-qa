@@ -373,7 +373,7 @@ Decisiones de los handlers:
   - `createTestDock({ accounts, products, orders })` crea un dock nuevo por prueba con reloj controlado (`TestClock`, arranca el 2026-11-13 10:00 UTC), ids secuenciales (`id-0001`…) y hasher rápido (`FastHasher`, no guarda texto plano). Cada bandera en `false` omite esa parte del seed (por ejemplo catálogo vacío para CP-CAT-02).
   - `ApiClient` devuelve `ApiResponse<T>` con el tipo de salida de cada handler (las fechas son `string`); `expectOk` y `expectFailure` estrechan el resultado.
 - [x] 7 archivos en `functions/` (67 casos, 68 pruebas; todas aprueban y 22 defectos introducidos a propósito fueron detectados).
-- [ ] 3 archivos en `integration/`.
+- [x] 3 archivos en `integration/` (3 escenarios aprobados; 10 defectos introducidos a propósito fueron detectados).
 - [ ] Configuración de reportes (HTML, JSON, JUnit) hacia `reports/`.
 
 ### Riesgos técnicos a validar temprano
@@ -393,7 +393,7 @@ Decisiones de los handlers:
 | 3 | Matriz de trazabilidad | Hecho (Word); ajustar extensión `.js` → `.ts` si se confirma |
 | 4 | Casos de prueba diseñados | Hecho (67 casos, ver `specifies.md`) |
 | 5 | Código fuente de pruebas unitarias | Hecho (`testing/functions`, 67 casos aprobados) |
-| 6 | Código fuente de pruebas integrales | Pendiente |
+| 6 | Código fuente de pruebas integrales | Hecho (`testing/integration`, 3 escenarios aprobados) |
 | 7 | Justificación de buenas prácticas | Pendiente |
 | 8 | Reporte de ejecución de pruebas | Pendiente |
 | 9 | Investigación sobre pruebas de seguridad | Pendiente |
@@ -424,7 +424,7 @@ Criterio de "excelente" en lo automatizado: **todas** las pruebas implementadas 
 2. Construir el sistema mínimo: modelo de dominio en `core` (**hecho**), luego `infra` (stores, plugins) y por último los slices de `app`, donde viven los casos de uso (handlers).
 3. Armar `testing/utilities` (fixtures, dobles, factories, test-dock, cliente) (de ahí dependen todas las pruebas). **Hecho.**
 4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro. **Hecho.**
-5. Escribir los 3 escenarios en `testing/integration`.
+5. Escribir los 3 escenarios en `testing/integration`. **Hecho.**
 6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias.
 7. Redactar justificación de buenas prácticas con lo realmente aplicado.
 8. Investigación y estrategia de seguridad (puede avanzar en paralelo desde el paso 2).

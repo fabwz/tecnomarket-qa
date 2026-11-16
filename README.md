@@ -13,7 +13,7 @@ El enunciado no trae código, así que construimos el sistema bajo prueba (una A
 | Sistema bajo prueba (dominio, infraestructura, API) | Hecho |
 | Utilidades de prueba (datos controlados, dock aislado, cliente de API) | Hecho |
 | 67 casos unitarios (`testing/functions`, 68 pruebas) | Hecho: todas aprueban |
-| **3 escenarios integrales** (`testing/integration`) | **Pendiente** |
+| 3 escenarios integrales (`testing/integration`) | Hecho: todos aprueban |
 | Reporte de ejecución (HTML + JSON/JUnit) | Pendiente |
 | Justificación de buenas prácticas | Pendiente |
 | Investigación y estrategia de seguridad | Pendiente |

@@ -11,9 +11,9 @@ Lista completa de las pruebas del proyecto, con su estado. El contexto, las regl
 | Archivos de pruebas unitarias | 7 |
 | Archivos de pruebas E2E | 3 |
 | Prioridad Alta / Media / Baja | 35 / 26 / 6 |
-| Automatizados | 67 de 70 |
-| Aprobados | 67 de 70 |
-| Pruebas Vitest ejecutadas | 68 (CP-LOG-09 se verifica en dos pruebas) |
+| Automatizados | 70 de 70 |
+| Aprobados | 70 de 70 |
+| Pruebas Vitest ejecutadas | 71 (CP-LOG-09 se verifica en dos pruebas) |
 
 ### Estados
 
@@ -38,9 +38,9 @@ Criterio de aceptación propuesto para la ejecución completa: todos los casos d
 | Validación de contraseña | `password.test.ts` | Aprueba |
 | Agregado de productos al carrito | `cart.test.ts` | Aprueba |
 | Confirmación de compra | `checkout.test.ts` | Aprueba |
-| Escenario E2E 1 | `testing/integration/scenario1-registration-checkout.test.ts` | Pendiente |
-| Escenario E2E 2 | `testing/integration/scenario2-login-checkout.test.ts` | Pendiente |
-| Escenario E2E 3 | `testing/integration/scenario3-history.test.ts` | Pendiente |
+| Escenario E2E 1 | `testing/integration/scenario1-registration-checkout.test.ts` | Aprueba |
+| Escenario E2E 2 | `testing/integration/scenario2-login-checkout.test.ts` | Aprueba |
+| Escenario E2E 3 | `testing/integration/scenario3-history.test.ts` | Aprueba |
 
 `catalog.test.ts` e `history.test.ts` no están en el mínimo, pero cubren REQ-03 y REQ-05 completos.
 
@@ -238,7 +238,7 @@ Casos de uso: CU-01, CU-02, CU-05, CU-06, CU-07.
 | 5 | Confirmar compra | Número de pedido con formato `PED-AAAAMMDD-NNNN`; resumen con 1 artículo y total ₡35 000 |
 | Final | Estado del sistema | 1 pedido guardado; carrito vacío; stock de P-001 = 4 |
 
-Estado: Pendiente
+Estado: Aprueba
 
 ### E2E-02 — Login → Consultar productos → Agregar productos → Compra
 
@@ -253,7 +253,7 @@ Casos de uso: CU-02, CU-03, CU-04, CU-05, CU-06, CU-07.
 | 5 | Confirmar compra | Número de pedido único; resumen con 2 artículos y total ₡60 000 |
 | Final | Estado del sistema | 1 pedido nuevo con 2 líneas; carrito vacío; stock P-001 = 4 y P-002 = 8 |
 
-Estado: Pendiente
+Estado: Aprueba
 
 ### E2E-03 — Login → Consultar historial de pedidos
 
@@ -266,7 +266,7 @@ Casos de uso: CU-02, CU-08.
 | 3 | Revisar orden y datos | Más reciente primero; coincide con los pedidos de U3 en los datos de prueba |
 | 4 | Revisar aislamiento | No aparece ningún pedido de otros usuarios |
 
-Estado: Pendiente
+Estado: Aprueba
 
 ## 6. Cobertura por requerimiento
 
@@ -283,13 +283,13 @@ Estado: Pendiente
 Hecho:
 - `infra` (5 stores en memoria, plugins `auth` y `exceptions`, traducción de errores a HTTP) y `app` (8 slices con sus handlers y la clase `App`), enlazados con módulos dockdi.
 - `testing/utilities`: fixtures (U1–U3, P-001–P-004, 2 pedidos de U3), dobles (reloj, ids, hasher), fábricas, dock de prueba con seed y cliente de API tipado (estos dos últimos, para los E2E), más `mocks.ts`, `assertions.ts` y `auth-world.ts` para las unitarias.
+- Los 3 archivos de `testing/integration` (un escenario por archivo, una prueba por escenario): llaman a la app Elysia con `app.handle` a través de `ApiClient`, sobre un dock nuevo por prueba con el seed completo, y verifican el estado final leyendo los repositorios reales del dock. `afterEach` hace `dock.reset()`. Ante 10 defectos introducidos a propósito en handlers, vista y numeración, los 3 escenarios fallaron.
 - Los 7 archivos de `testing/functions` (67 casos, 68 pruebas Vitest): todos aprueban. `tsc --noEmit` sin errores.
 - Validación de que las pruebas detectan fallos: se introdujeron 22 defectos en `core`, `app` e `infra` (límites de nombre, teléfono y contraseña, vencimiento de sesión, stock, vaciado del carrito, orden del historial, etc.) y todos hicieron fallar al menos una prueba. Un primer intento dejó un sobreviviente (comprar todo el stock) que originó CP-COM-08.
 - Configuración de Vitest con alias de rutas y dock de composición con `override` para pruebas.
 - Modelo de dominio en `core` (kernel compartido y 4 contextos) y adaptadores `infra/shared` (reloj, ids, hasher, numeración de pedidos).
 
 Pendiente:
-- Escribir los 3 escenarios E2E.
 - Configurar el reporte (HTML + JSON/JUnit); falta `@vitest/ui` para el HTML.
 - Ajustar la matriz de trazabilidad del documento (extensión `.test.ts` y rutas `testing/functions` y `testing/integration`).
 
@@ -297,7 +297,7 @@ Pendiente:
 
 Completar durante la ejecución.
 
-Ejecución unitaria (67 casos): no se detectaron defectos del sistema. Las pruebas por mutación (sección 7) no son defectos del sistema sino evidencia de calidad de las pruebas.
+Ejecución completa (67 casos unitarios y 3 escenarios E2E): no se detectaron defectos del sistema. Las pruebas por mutación (sección 7) no son defectos del sistema sino evidencia de calidad de las pruebas.
 
 | ID | Caso que lo detectó | Descripción | Severidad | Estado |
 |---|---|---|---|---|
