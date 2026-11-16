@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { DailyNumbering } from "@infra/shared/daily.numbering";
 import { PlaceOrderHandler } from "@app/order-checkout/place-order/place-order.handler";
+import { ProductId } from "@core/product-catalog";
+import { ShopperId } from "@core/shopping-cart";
 import { codeOf } from "@testing/utilities/assertions";
 import { createAuthWorld } from "@testing/utilities/auth-world";
 import { cartOf, productOf } from "@testing/utilities/factories";
@@ -27,7 +30,8 @@ describe("Order placement", () => {
 
 	const ana = () => auth.people.ana;
 	const fillCart = (items: Parameters<typeof cartOf>[1]) => carts.add(cartOf(ana(), items));
-	const stockOf = (id: string) => products.findById(id as never)?.stock;
+	const stockOf = (id: string) => products.findById(ProductId.parse(id))?.stock;
+	const cartOfAna = () => carts.findByShopper(ShopperId.parse(ana().id));
 	const savedOrders = () => orders.add.mock.calls.map(([order]) => order);
 
 	it("CP-COM-01 places an order with two products", () => {
@@ -41,18 +45,19 @@ describe("Order placement", () => {
 		expect(savedOrders()[0]).toMatchObject({ buyerId: ana().id, id: summary.id });
 		expect(savedOrders()[0]!.lines).toHaveLength(2);
 		expect(savedOrders()[0]!.computeTotal()).toBe(60000);
-		expect(carts.findByShopper(ana().id as never)?.isEmpty()).toBe(true);
+		expect(cartOfAna()?.isEmpty()).toBe(true);
 		expect(stockOf("P-001")).toBe(4);
 		expect(stockOf("P-002")).toBe(8);
 	});
 
 	it("CP-COM-02 gives a different order number to consecutive purchases", () => {
+		const real = new PlaceOrderHandler(products, carts, orders, new DailyNumbering(), mockIds("ord"), mockClock());
 		fillCart([[keyboard, 1]]);
-		const first = handler.execute(ana());
+		const first = real.execute(ana());
 		fillCart([[keyboard, 1]]);
-		const second = handler.execute(ana());
+		const second = real.execute(ana());
 
-		expect(first.number).not.toBe(second.number);
+		expect([first.number, second.number]).toEqual(["PED-20261113-0001", "PED-20261113-0002"]);
 		expect(new Set(savedOrders().map((order) => order.number)).size).toBe(2);
 	});
 
@@ -74,7 +79,7 @@ describe("Order placement", () => {
 		expect(products.add).not.toHaveBeenCalled();
 		expect(carts.add).toHaveBeenCalledOnce();
 		expect(stockOf("P-003")).toBe(1);
-		expect(carts.findByShopper(ana().id as never)?.countItems()).toBe(2);
+		expect(cartOfAna()?.countItems()).toBe(2);
 	});
 
 	it("CP-COM-05 saves a single order when the confirmation is sent twice", () => {
@@ -88,13 +93,10 @@ describe("Order placement", () => {
 	});
 
 	it("CP-COM-06 saves no order with an expired session", () => {
-		fillCart([[keyboard, 1]]);
 		const token = auth.startSession(ana());
 		auth.clock.set(new Date(auth.clock.now().getTime() + 30 * 60 * 1000));
 
 		expect(codeOf(() => auth.plugin.authenticate(`Bearer ${token}`))).toBe("session_required");
-
-		expect(orders.add).not.toHaveBeenCalled();
 	});
 
 	it("CP-COM-07 keeps the total consistent between the summary and the saved order", () => {
@@ -105,5 +107,15 @@ describe("Order placement", () => {
 		expect(summary.total).toBe(72500);
 		expect(summary.lines.map((line) => line.subtotal)).toEqual([37500, 35000]);
 		expect(savedOrders()[0]!.computeTotal()).toBe(72500);
+	});
+
+	it("CP-COM-08 allows buying the whole available stock and leaves it at zero", () => {
+		fillCart([[monitor, 2]]);
+
+		const summary = handler.execute(ana());
+
+		expect(summary).toMatchObject({ itemCount: 2, total: 190000 });
+		expect(stockOf("P-003")).toBe(0);
+		expect(savedOrders()).toHaveLength(1);
 	});
 });

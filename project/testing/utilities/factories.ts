@@ -12,7 +12,7 @@ import {
 import { Product, ProductDescription, ProductId, ProductName, StockUnits, UnitPrice } from "@core/product-catalog";
 import type { RegisterUserBody } from "@app/account-access/register-user/register-user.schema";
 import { Cart, CartProductId, ItemName, ItemPrice, ItemQuantity, ShopperId } from "@core/shopping-cart";
-import type { accountFixtures, orderFixtures } from "./fixtures";
+import type { accountFixtures } from "./fixtures";
 
 type AccountFixture = (typeof accountFixtures)[keyof typeof accountFixtures];
 type ProductFixture = {
@@ -22,7 +22,18 @@ type ProductFixture = {
 	readonly price: number;
 	readonly stock: number;
 };
-type OrderFixture = (typeof orderFixtures)[keyof typeof orderFixtures];
+type OrderFixture = {
+	readonly id: string;
+	readonly number: string;
+	readonly buyerId: string;
+	readonly placedAt: string;
+	readonly lines: readonly {
+		readonly productId: string;
+		readonly name: string;
+		readonly unitPrice: number;
+		readonly quantity: number;
+	}[];
+};
 
 export const registrationInput = (overrides: Partial<RegisterUserBody> = {}): RegisterUserBody => ({
 	fullName: "Carlos Mora Solís",

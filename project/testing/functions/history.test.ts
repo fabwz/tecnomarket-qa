@@ -4,7 +4,7 @@ import { PlaceOrderHandler } from "@app/order-checkout/place-order/place-order.h
 import { codeOf } from "@testing/utilities/assertions";
 import { createAuthWorld } from "@testing/utilities/auth-world";
 import { cartOf, orderOf, productOf } from "@testing/utilities/factories";
-import { orderFixtures, productFixtures } from "@testing/utilities/fixtures";
+import { accountFixtures, orderFixtures, productFixtures } from "@testing/utilities/fixtures";
 import { mockCarts, mockClock, mockIds, mockNumbering, mockOrders, mockProducts } from "@testing/utilities/mocks";
 
 describe("Order history", () => {
@@ -44,17 +44,16 @@ describe("Order history", () => {
 	});
 
 	it("CP-HIS-04 does not show orders of other users", () => {
-		const history = handler.execute(auth.people.ana);
+		const own = { ...first, id: "ord-0003", number: "PED-20261111-0001", buyerId: accountFixtures.ana.id };
+		const shared = new ListOrdersHandler(mockOrders([orderOf(first), orderOf(own), orderOf(second)]));
 
-		expect(orders.listByBuyer).toHaveBeenCalledWith(auth.people.ana.id);
-		expect(history.map((order) => order.number)).not.toContain(first.number);
-		expect(history.map((order) => order.number)).not.toContain(second.number);
+		const history = shared.execute(auth.people.ana);
+
+		expect(history.map((order) => order.number)).toEqual([own.number]);
 	});
 
 	it("CP-HIS-05 requires a session to open the history", () => {
 		expect(codeOf(() => auth.plugin.authenticate(undefined))).toBe("session_required");
-
-		expect(orders.listByBuyer).not.toHaveBeenCalled();
 	});
 
 	it("CP-HIS-06 shows a newly placed order first with the amount of the purchase", () => {

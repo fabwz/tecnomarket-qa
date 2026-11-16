@@ -41,8 +41,6 @@ describe("Product catalog", () => {
 
 	it("CP-CAT-03 requires a session to list the catalog", () => {
 		expect(codeOf(() => auth.plugin.authenticate(undefined))).toBe("session_required");
-
-		expect(products.list).not.toHaveBeenCalled();
 	});
 
 	it("CP-CAT-04 marks a product without stock as unavailable", () => {
@@ -78,7 +76,5 @@ describe("Product catalog", () => {
 
 	it("CP-DET-04 requires a session to view a product detail", () => {
 		expect(codeOf(() => auth.plugin.authenticate(undefined))).toBe("session_required");
-
-		expect(products.findById).not.toHaveBeenCalled();
 	});
 });
