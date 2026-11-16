@@ -395,7 +395,7 @@ Decisiones de los handlers:
 | 5 | Código fuente de pruebas unitarias | Hecho (`testing/functions`, 67 casos aprobados) |
 | 6 | Código fuente de pruebas integrales | Hecho (`testing/integration`, 3 escenarios aprobados) |
 | 7 | Justificación de buenas prácticas | Pendiente |
-| 8 | Reporte de ejecución de pruebas | En curso: generación automática lista (`bun run report`); falta redactar evidencias, defectos y conclusiones |
+| 8 | Reporte de ejecución de pruebas | En curso: pasada final guardada en `reports/` (71 de 71, 100 %, sin defectos); falta redactar el documento con evidencias, defectos y conclusiones |
 | 9 | Investigación sobre pruebas de seguridad | Pendiente |
 | 10 | Estrategia de implementación de pruebas de seguridad | Pendiente |
 | 11 | Presentación final del proyecto | Pendiente |
@@ -425,7 +425,7 @@ Criterio de "excelente" en lo automatizado: **todas** las pruebas implementadas 
 3. Armar `testing/utilities` (fixtures, dobles, factories, test-dock, cliente) (de ahí dependen todas las pruebas). **Hecho.**
 4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro. **Hecho.**
 5. Escribir los 3 escenarios en `testing/integration`. **Hecho.**
-6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias. **Configurado y ejecutado (71/71); falta redactar el documento final.**
+6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias. **Configurado y ejecutado: pasada final en `reports/` (71/71, 100 %); falta redactar el documento final.**
 7. Redactar justificación de buenas prácticas con lo realmente aplicado.
 8. Investigación y estrategia de seguridad (puede avanzar en paralelo desde el paso 2).
 9. Presentación final.
