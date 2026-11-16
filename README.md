@@ -14,7 +14,7 @@ El enunciado no trae código, así que construimos el sistema bajo prueba (una A
 | Utilidades de prueba (datos controlados, dock aislado, cliente de API) | Hecho |
 | 67 casos unitarios (`testing/functions`, 68 pruebas) | Hecho: todas aprueban |
 | 3 escenarios integrales (`testing/integration`) | Hecho: todos aprueban |
-| Reporte de ejecución (HTML + JSON/JUnit) | Pendiente |
+| Reporte de ejecución (HTML + JSON/JUnit) | Generación automática hecha; falta el documento final |
 | Justificación de buenas prácticas | Pendiente |
 | Investigación y estrategia de seguridad | Pendiente |
 | Presentación final | Pendiente |
@@ -39,6 +39,7 @@ Todos se ejecutan desde la carpeta `project/`.
 | Correr todas las pruebas | `bunx --bun vitest run` |
 | Correr pruebas en modo observador | `bunx --bun vitest` |
 | Correr un solo archivo | `bunx --bun vitest run testing/functions/cart.test.ts` |
+| Generar el reporte (HTML, JSON, JUnit en `reports/`) y ver el porcentaje de éxito | `bun run report` |
 | Revisar tipos (TypeScript estricto) | `bunx tsc --noEmit` |
 | Levantar la API a mano | `bun scripts/server.boot.ts` (puerto 3000, o `PORT=4000`) |
 

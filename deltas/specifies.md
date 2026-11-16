@@ -286,11 +286,11 @@ Hecho:
 - Los 3 archivos de `testing/integration` (un escenario por archivo, una prueba por escenario): llaman a la app Elysia con `app.handle` a través de `ApiClient`, sobre un dock nuevo por prueba con el seed completo, y verifican el estado final leyendo los repositorios reales del dock. `afterEach` hace `dock.reset()`. Ante 10 defectos introducidos a propósito en handlers, vista y numeración, los 3 escenarios fallaron.
 - Los 7 archivos de `testing/functions` (67 casos, 68 pruebas Vitest): todos aprueban. `tsc --noEmit` sin errores.
 - Validación de que las pruebas detectan fallos: se introdujeron 22 defectos en `core`, `app` e `infra` (límites de nombre, teléfono y contraseña, vencimiento de sesión, stock, vaciado del carrito, orden del historial, etc.) y todos hicieron fallar al menos una prueba. Un primer intento dejó un sobreviviente (comprar todo el stock) que originó CP-COM-08.
+- Reporte automático (`bun run report`): HTML, JSON y JUnit en `reports/` y resumen con porcentaje de éxito (última ejecución: 71 de 71, 100 %).
 - Configuración de Vitest con alias de rutas y dock de composición con `override` para pruebas.
 - Modelo de dominio en `core` (kernel compartido y 4 contextos) y adaptadores `infra/shared` (reloj, ids, hasher, numeración de pedidos).
 
 Pendiente:
-- Configurar el reporte (HTML + JSON/JUnit); falta `@vitest/ui` para el HTML.
 - Ajustar la matriz de trazabilidad del documento (extensión `.test.ts` y rutas `testing/functions` y `testing/integration`).
 
 ## 8. Registro de defectos

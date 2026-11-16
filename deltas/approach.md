@@ -164,7 +164,7 @@ Ancla con el sistema: varios riesgos ya aparecen en nuestras reglas y casos de p
 | Manejo de errores | `core` lanza `DomainError` (un tipo por sub-slice, códigos `snake_case` cerrados, definido con `DomainError.define`). Los handlers de `app` dejan propagar los errores y el plugin `exceptions` los traduce a HTTP. |
 | Unitarias (`testing/functions`) | Dos niveles: objetos de valor, entidades y políticas de `core` directamente, y los handlers de `app` construidos a mano con mocks (`new XHandler(mockRepo, ...).execute(...)`), sin dock, sin stores reales y sin HTTP. El 401 se verifica con `AuthPlugin.authenticate()` y repositorios simulados. El dock y `app.handle` se reservan para `testing/integration`. |
 | Integrales / E2E (`testing/integration`) | Llaman a la app Elysia en proceso con `app.handle(new Request(...))` (sin abrir puertos), en secuencia, reproduciendo el flujo de negocio. |
-| Reporte | Reporter HTML de Vitest + salida JSON/JUnit; el porcentaje de éxito se calcula del JSON. |
+| Reporte | Reporter HTML de Vitest + salida JSON/JUnit hacia `reports/`; el porcentaje de éxito se calcula del JSON con `scripts/report.summary.ts`. Se genera con `bun run report` (desde `project/`). |
 
 ### Convenciones de nombres
 
@@ -374,12 +374,12 @@ Decisiones de los handlers:
   - `ApiClient` devuelve `ApiResponse<T>` con el tipo de salida de cada handler (las fechas son `string`); `expectOk` y `expectFailure` estrechan el resultado.
 - [x] 7 archivos en `functions/` (67 casos, 68 pruebas; todas aprueban y 22 defectos introducidos a propósito fueron detectados).
 - [x] 3 archivos en `integration/` (3 escenarios aprobados; 10 defectos introducidos a propósito fueron detectados).
-- [ ] Configuración de reportes (HTML, JSON, JUnit) hacia `reports/`.
+- [x] Configuración de reportes en `vitest.config.ts`: HTML (`reports/html/index.html`), JSON (`reports/results.json`) y JUnit (`reports/junit.xml`); `scripts/report.summary.ts` imprime total, aprobadas, falladas y porcentaje de éxito.
 
 ### Riesgos técnicos a validar temprano
 - **Vitest sobre Bun:** resuelto. Con `bunx --bun vitest`, Elysia (`app.handle`) y `Bun.password` funcionan. Detalle: `app.handle` exige una URL con host de al menos `localhost` (`http://localhost/ruta`); con `http://x/ruta` Elysia responde 404.
 - **Alias de rutas:** resuelto con `resolve.tsconfigPaths: true` (Vite 8.3). Validado con `bunx --bun vitest run`.
-- **Reporter HTML:** requiere `@vitest/ui`, que hoy no está en `package.json`.
+- **Reporter HTML:** resuelto con `@vitest/ui@5.1.0` (misma versión que Vitest). En esta versión el HTML se configura con `outputDir` dentro del reporter, no con `outputFile`.
 - **API de dockdi:** resuelto. `createDock(overrides)` recibe un `Module` que usa `container.override(token).toValue(...)` sobre un `scope()` hijo. Validado con un test temporal (ya eliminado).
 - **Extensión de archivos:** `.test.ts` en lugar de `.test.js`; la matriz de trazabilidad del Word hoy dice `.js` y debe alinearse, además de las rutas (`testing/functions`, `testing/integration`).
 - **Alcance de "E2E":** se plantea a nivel de API. Si se exigiera interfaz, el plan B es una página mínima y Playwright solo para los 3 escenarios. Falta confirmar que el nivel API es aceptable.
@@ -395,7 +395,7 @@ Decisiones de los handlers:
 | 5 | Código fuente de pruebas unitarias | Hecho (`testing/functions`, 67 casos aprobados) |
 | 6 | Código fuente de pruebas integrales | Hecho (`testing/integration`, 3 escenarios aprobados) |
 | 7 | Justificación de buenas prácticas | Pendiente |
-| 8 | Reporte de ejecución de pruebas | Pendiente |
+| 8 | Reporte de ejecución de pruebas | En curso: generación automática lista (`bun run report`); falta redactar evidencias, defectos y conclusiones |
 | 9 | Investigación sobre pruebas de seguridad | Pendiente |
 | 10 | Estrategia de implementación de pruebas de seguridad | Pendiente |
 | 11 | Presentación final del proyecto | Pendiente |
@@ -425,7 +425,7 @@ Criterio de "excelente" en lo automatizado: **todas** las pruebas implementadas 
 3. Armar `testing/utilities` (fixtures, dobles, factories, test-dock, cliente) (de ahí dependen todas las pruebas). **Hecho.**
 4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro. **Hecho.**
 5. Escribir los 3 escenarios en `testing/integration`. **Hecho.**
-6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias.
+6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias. **Configurado y ejecutado (71/71); falta redactar el documento final.**
 7. Redactar justificación de buenas prácticas con lo realmente aplicado.
 8. Investigación y estrategia de seguridad (puede avanzar en paralelo desde el paso 2).
 9. Presentación final.
