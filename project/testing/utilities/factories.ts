@@ -11,10 +11,17 @@ import {
 } from "@core/order-checkout";
 import { Product, ProductDescription, ProductId, ProductName, StockUnits, UnitPrice } from "@core/product-catalog";
 import type { RegisterUserBody } from "@app/account-access/register-user/register-user.schema";
-import type { accountFixtures, orderFixtures, productFixtures } from "./fixtures";
+import { Cart, CartProductId, ItemName, ItemPrice, ItemQuantity, ShopperId } from "@core/shopping-cart";
+import type { accountFixtures, orderFixtures } from "./fixtures";
 
 type AccountFixture = (typeof accountFixtures)[keyof typeof accountFixtures];
-type ProductFixture = (typeof productFixtures)[keyof typeof productFixtures];
+type ProductFixture = {
+	readonly id: string;
+	readonly name: string;
+	readonly description: string;
+	readonly price: number;
+	readonly stock: number;
+};
 type OrderFixture = (typeof orderFixtures)[keyof typeof orderFixtures];
 
 export const registrationInput = (overrides: Partial<RegisterUserBody> = {}): RegisterUserBody => ({
@@ -60,4 +67,19 @@ export const orderOf = (fixture: OrderFixture): Order =>
 			})),
 		},
 		new Date(fixture.placedAt),
+	);
+
+export const cartOf = (account: Account, items: readonly (readonly [ProductFixture, number])[]): Cart =>
+	items.reduce(
+		(cart, [product, quantity]) =>
+			cart.addItem(
+				{
+					productId: CartProductId.parse(product.id),
+					name: ItemName.parse(product.name),
+					unitPrice: ItemPrice.parse(product.price),
+					quantity: ItemQuantity.parse(quantity),
+				},
+				product.stock,
+			),
+		Cart.openFor(ShopperId.parse(account.id)),
 	);
