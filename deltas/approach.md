@@ -162,7 +162,7 @@ Ancla con el sistema: varios riesgos ya aparecen en nuestras reglas y casos de p
 | Persistencia | Stores en memoria (`Map`). Sin SQLite ni infraestructura externa; cada prueba arranca con un contenedor nuevo. |
 | IDs | `uuidv7` para usuarios, pedidos y sesiones. El número de pedido `PED-AAAAMMDD-NNNN` es aparte (RN-12). |
 | Manejo de errores | `core` lanza `DomainError` (un tipo por sub-slice, códigos `snake_case` cerrados, definido con `DomainError.define`). Los handlers de `app` dejan propagar los errores y el plugin `exceptions` los traduce a HTTP. |
-| Unitarias (`testing/functions`) | Dos niveles: objetos de valor, entidades y políticas de `core` directamente, y los handlers de `app` resueltos del dock de prueba (`dock.resolve(XHandlerToken).execute(...)` (el token se importa del archivo del handler), sin HTTP). |
+| Unitarias (`testing/functions`) | Dos niveles: objetos de valor, entidades y políticas de `core` directamente, y los handlers de `app` construidos a mano con mocks (`new XHandler(mockRepo, ...).execute(...)`), sin dock, sin stores reales y sin HTTP. El 401 se verifica con `AuthPlugin.authenticate()` y repositorios simulados. El dock y `app.handle` se reservan para `testing/integration`. |
 | Integrales / E2E (`testing/integration`) | Llaman a la app Elysia en proceso con `app.handle(new Request(...))` (sin abrir puertos), en secuencia, reproduciendo el flujo de negocio. |
 | Reporte | Reporter HTML de Vitest + salida JSON/JUnit; el porcentaje de éxito se calcula del JSON. |
 
@@ -289,21 +289,24 @@ project/
 │
 └─ testing/
    ├─ functions/                    # pruebas unitarias, un archivo por funcionalidad
-   │  ├─ registro.test.ts
+   │  ├─ registration.test.ts
    │  ├─ password.test.ts
    │  ├─ login.test.ts
-   │  ├─ catalogo.test.ts
-   │  ├─ carrito.test.ts
-   │  ├─ compras.test.ts
-   │  └─ historial.test.ts
+   │  ├─ catalog.test.ts
+   │  ├─ cart.test.ts
+   │  ├─ checkout.test.ts
+   │  └─ history.test.ts
    ├─ integration/                  # un archivo por escenario
-   │  ├─ escenario1-registro-compra.test.ts
-   │  ├─ escenario2-login-compra.test.ts
-   │  └─ escenario3-historial.test.ts
+   │  ├─ scenario1-registration-checkout.test.ts
+   │  ├─ scenario2-login-checkout.test.ts
+   │  └─ scenario3-history.test.ts
    └─ utilities/                    # compartido por ambos tipos
       ├─ fixtures.ts                # U1–U3 (ana, luis, maria), P-001–P-004 y los 2 pedidos de U3
-      ├─ doubles.ts                 # TestClock, SequentialIds, FastHasher
-      ├─ factories.ts               # entidades del dominio a partir de fixtures; registrationInput()
+      ├─ doubles.ts                 # TestClock, SequentialIds, FastHasher (usados por el dock de prueba)
+      ├─ mocks.ts                   # mocks vi.fn: repositorios, reloj, ids, hasher y numeración (unitarias)
+      ├─ assertions.ts              # failureOf / codeOf: error de dominio lanzado por una acción
+      ├─ auth-world.ts              # createAuthWorld(): AuthPlugin con mocks, cuentas U1–U3 y sesiones
+      ├─ factories.ts               # entidades del dominio a partir de fixtures; registrationInput(), cartOf()
       ├─ test-dock.ts               # createTestDock(seed?): dock aislado con dobles + seed + ApiClient
       └─ api-client.ts              # ApiClient tipado sobre app.handle; expectOk / expectFailure
 ```
@@ -353,7 +356,7 @@ Decisiones de los handlers:
 - [x] `product-catalog`: `Product` con `isInStock()` y `withdraw()` (RN-08, RN-12).
 - [x] `shopping-cart`: `Cart`, `CartLine`, política de stock acumulado (RN-08 a RN-10).
 - [x] `order-checkout`: `Order`, `OrderLine`, `OrderNumbering` (RN-11, RN-12, RN-14).
-- [ ] Reglas de `core` cubiertas por las pruebas de `testing/functions` (hoy solo verificadas con pruebas temporales).
+- [x] Reglas de `core` cubiertas por las pruebas de `testing/functions`.
 
 **Infra**
 - [x] `stores`: account, session, product, cart, order (con `add` que reemplaza por id), enlazados como singletons en `server.dock.ts`.
@@ -369,7 +372,8 @@ Decisiones de los handlers:
 - [x] `utilities/`: `fixtures`, `doubles`, `factories`, `test-dock` y `api-client`.
   - `createTestDock({ accounts, products, orders })` crea un dock nuevo por prueba con reloj controlado (`TestClock`, arranca el 2026-11-13 10:00 UTC), ids secuenciales (`id-0001`…) y hasher rápido (`FastHasher`, no guarda texto plano). Cada bandera en `false` omite esa parte del seed (por ejemplo catálogo vacío para CP-CAT-02).
   - `ApiClient` devuelve `ApiResponse<T>` con el tipo de salida de cada handler (las fechas son `string`); `expectOk` y `expectFailure` estrechan el resultado.
-- [ ] 7 archivos en `functions/` (66 casos) y 3 en `integration/`.
+- [x] 7 archivos en `functions/` (67 casos, 68 pruebas; todas aprueban y 22 defectos introducidos a propósito fueron detectados).
+- [ ] 3 archivos en `integration/`.
 - [ ] Configuración de reportes (HTML, JSON, JUnit) hacia `reports/`.
 
 ### Riesgos técnicos a validar temprano
@@ -387,8 +391,8 @@ Decisiones de los handlers:
 | 1 | Documento de análisis de requerimientos y casos de uso | Hecho (Word) |
 | 2 | Diagrama de casos de uso | Hecho (Mermaid, incluido en el Word) |
 | 3 | Matriz de trazabilidad | Hecho (Word); ajustar extensión `.js` → `.ts` si se confirma |
-| 4 | Casos de prueba diseñados | Hecho (66 casos, ver `specifies.md`) |
-| 5 | Código fuente de pruebas unitarias | Pendiente |
+| 4 | Casos de prueba diseñados | Hecho (67 casos, ver `specifies.md`) |
+| 5 | Código fuente de pruebas unitarias | Hecho (`testing/functions`, 67 casos aprobados) |
 | 6 | Código fuente de pruebas integrales | Pendiente |
 | 7 | Justificación de buenas prácticas | Pendiente |
 | 8 | Reporte de ejecución de pruebas | Pendiente |
@@ -419,7 +423,7 @@ Criterio de "excelente" en lo automatizado: **todas** las pruebas implementadas 
 1. Validar Bun + Vitest con un caso mínimo (resuelve el riesgo técnico principal). **Hecho.**
 2. Construir el sistema mínimo: modelo de dominio en `core` (**hecho**), luego `infra` (stores, plugins) y por último los slices de `app`, donde viven los casos de uso (handlers).
 3. Armar `testing/utilities` (fixtures, dobles, factories, test-dock, cliente) (de ahí dependen todas las pruebas). **Hecho.**
-4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro.
+4. Escribir las pruebas unitarias (`testing/functions`) por archivo, empezando por contraseña y registro. **Hecho.**
 5. Escribir los 3 escenarios en `testing/integration`.
 6. Configurar reporte y ejecutar la suite completa; registrar defectos y evidencias.
 7. Redactar justificación de buenas prácticas con lo realmente aplicado.

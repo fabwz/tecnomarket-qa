@@ -9,10 +9,10 @@ El enunciado no trae código, así que construimos el sistema bajo prueba (una A
 | Parte | Estado |
 |---|---|
 | Análisis de requerimientos, casos de uso, diagrama y matriz de trazabilidad | Hecho (documento Word) |
-| 66 casos de prueba diseñados | Hecho (`deltas/specifies.md`) |
+| 67 casos de prueba diseñados | Hecho (`deltas/specifies.md`) |
 | Sistema bajo prueba (dominio, infraestructura, API) | Hecho |
 | Utilidades de prueba (datos controlados, dock aislado, cliente de API) | Hecho |
-| **66 pruebas unitarias** (`testing/functions`) | **Pendiente** |
+| 67 casos unitarios (`testing/functions`, 68 pruebas) | Hecho: todas aprueban |
 | **3 escenarios integrales** (`testing/integration`) | **Pendiente** |
 | Reporte de ejecución (HTML + JSON/JUnit) | Pendiente |
 | Justificación de buenas prácticas | Pendiente |
@@ -38,7 +38,7 @@ Todos se ejecutan desde la carpeta `project/`.
 |---|---|
 | Correr todas las pruebas | `bunx --bun vitest run` |
 | Correr pruebas en modo observador | `bunx --bun vitest` |
-| Correr un solo archivo | `bunx --bun vitest run testing/functions/carrito.test.ts` |
+| Correr un solo archivo | `bunx --bun vitest run testing/functions/cart.test.ts` |
 | Revisar tipos (TypeScript estricto) | `bunx tsc --noEmit` |
 | Levantar la API a mano | `bun scripts/server.boot.ts` (puerto 3000, o `PORT=4000`) |
 
@@ -50,7 +50,7 @@ Al levantar la API a mano el catálogo empieza vacío: los productos de prueba l
 .
 ├─ deltas/                 documentación de trabajo (en español)
 │  ├─ approach.md          qué construir, decisiones, estructura y estado
-│  └─ specifies.md         las 66 pruebas unitarias y los 3 escenarios, con su estado
+│  └─ specifies.md         los 67 casos unitarios y los 3 escenarios, con su estado
 ├─ .claude/rules/          reglas de código y de commits del proyecto
 └─ project/
    ├─ scripts/             server.dock.ts (composición) y server.boot.ts (arranque)
@@ -61,7 +61,7 @@ Al levantar la API a mano el catálogo empieza vacío: los productos de prueba l
    └─ testing/
       ├─ functions/        pruebas unitarias, un archivo por funcionalidad
       ├─ integration/      escenarios de punta a punta, un archivo por escenario
-      └─ utilities/        datos, dobles, fábricas y cliente de API compartidos
+      └─ utilities/        datos, dobles, mocks, fábricas y cliente de API compartidos
 ```
 
 ### Las tres capas
