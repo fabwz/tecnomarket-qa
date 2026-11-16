@@ -5,6 +5,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/ui": "5.1.0",
     "vitest": "^5.1.0"
   },
   "peerDependencies": {
@@ -15,5 +16,9 @@
     "elysia": "^1.4.32",
     "uuidv7": "^1.2.1",
     "zod": "^4.6.7"
+  },
+  "scripts": {
+    "test": "bunx --bun vitest run",
+    "report": "bunx --bun vitest run; bun scripts/report.summary.ts"
   }
 }
